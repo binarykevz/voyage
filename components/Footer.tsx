@@ -1,8 +1,12 @@
 export default function Footer() {
   return (
-    <footer className="mt-12 py-10 px-4 text-center bg-ink-dark text-parchment-light border-t-4 border-double border-gold">
-      <p>Written with 🧭 in the salt-stained pages of adventure.</p>
-      <p className="mt-3 font-label text-xs opacity-70">"Smooth seas do not make skillful sailors."</p>
+    <footer className="tm-footer">
+      <p>
+        Written with <span className="tm-x">🧭</span> in the salt-stained pages of adventure.
+      </p>
+      <p style={{ marginTop: '.6rem', fontFamily: 'MedievalSharp, cursive', opacity: 0.8 }}>
+        &ldquo;X marks the spot — smooth seas never made a skilled sailor.&rdquo;
+      </p>
     </footer>
   );
 }
