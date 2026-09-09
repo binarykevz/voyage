@@ -1,8 +1,8 @@
-import Header from '@/components/Header';
-import MapSection from '@/components/MapSection';
-import JournalGrid from '@/components/JournalGrid';
-import LogCard from '@/components/LogCard';
-
+import Header from '../components/Header';
+import MapSection from '../components/MapSection';
+import JournalGrid from '../components/JournalGrid';
+import LogCard from '../components/LogCard';
+import Footer from '../components/Footer';
 // Runs on Cloudflare Workers edge
 export const runtime = 'edge';
 
