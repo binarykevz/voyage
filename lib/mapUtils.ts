@@ -1,12 +1,14 @@
-import type { Map as LeafletMap } from 'leaflet';
+import L from 'leaflet';
+import type { Map as LeafletMap, Marker } from 'leaflet';
 
 export interface CountryItem {
   name: string;
   onClick: () => void;
 }
 
+let shipMarkerInstance: Marker | null = null;
+
 export async function initMap(options: { container: HTMLElement; onCountryClick: (name: string, coords: [number, number]) => void }) {
-  const L = (await import('leaflet')).default;
   const { container, onCountryClick } = options;
 
   const map = L.map(container, { zoomControl: false, minZoom: 2, maxZoom: 7, worldCopyJump: true }).setView([20, 0], 2);
@@ -16,10 +18,11 @@ export async function initMap(options: { container: HTMLElement; onCountryClick:
   const shipIcon = L.divIcon({
     className: 'ship-marker',
     html: `<div class="ship"><div class="mast"></div><div class="sail"></div><div class="flag"></div><div class="ship-body"></div><div class="wake"></div></div>`,
-    iconSize: [70, 70], iconAnchor: [35, 35],
+    iconSize: [70, 70], 
+    iconAnchor: [35, 35],
   });
   
-  let shipMarker = L.marker([14.5995, 120.9842], { icon: shipIcon }).addTo(map);
+  shipMarkerInstance = L.marker([14.5995, 120.9842], { icon: shipIcon }).addTo(map);
   const countryList: CountryItem[] = [];
 
   try {
@@ -43,26 +46,43 @@ export async function initMap(options: { container: HTMLElement; onCountryClick:
     layer.bringToFront();
   } catch (e) { console.error(e); }
 
-  return { map, countryList, shipMarker };
+  return { map, countryList, shipMarker: shipMarkerInstance };
 }
 
-export function sailTo(map: LeafletMap, destination: [number, number], shipMarker: any, onProgress: (p: number) => void, onComplete: () => void) {
-  const start = shipMarker.getLatLng();
-  const points = [];
-  for (let i = 0; i <= 80; i++) points.push(interpolate([start.lat, start.lng], destination, i / 80));
+export function sailTo(map: LeafletMap, destination: [number, number], shipMarker: Marker, onProgress: (p: number) => void, onComplete: () => void) {
+  const startLatLng = shipMarker.getLatLng();
+  const start: [number, number] = [startLatLng.lat, startLatLng.lng];
+  
+  const points: [number, number][] = [];
+  for (let i = 0; i <= 80; i++) {
+    points.push(interpolate(start, destination, i / 80));
+  }
   
   L.polyline(points, { color: '#5d3a16', weight: 3, opacity: 0.85, dashArray: '8 12' }).addTo(map);
-  L.marker(destination, { icon: L.divIcon({ className: '', html: '<div class="destination-marker"></div>', iconSize: [22, 22] }) }).addTo(map);
+  
+  const destIcon = L.divIcon({ 
+    className: '', 
+    html: '<div class="destination-marker"></div>', 
+    iconSize: [22, 22], 
+    iconAnchor: [11, 11] 
+  });
+  L.marker(destination, { icon: destIcon }).addTo(map);
 
   let progress = 0;
+
   const animate = () => {
-    progress += 0.01;
-    if (progress > 1) { onComplete(); return; }
-    const pos = interpolate([start.lat, start.lng], destination, progress);
+    progress += 0.012; 
+    if (progress > 1) { 
+      shipMarker.setLatLng(destination);
+      onComplete(); 
+      return; 
+    }
+    const pos = interpolate(start, destination, progress);
     shipMarker.setLatLng(pos);
     onProgress(progress * 100);
     requestAnimationFrame(animate);
   };
+  
   animate();
 }
 
