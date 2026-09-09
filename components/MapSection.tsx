@@ -1,40 +1,69 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { initMap, sailTo, type CountryItem } from '../lib/mapUtils';
+import { motion } from 'framer-motion';
+import { initMap, sailTo } from '../lib/mapUtils';
 
 export default function MapSection() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+  const mapInst = useRef<any>(null);
   const shipRef = useRef<any>(null);
   const [dest, setDest] = useState('Awaiting destination...');
   const [prog, setProg] = useState(0);
+  const [status, setStatus] = useState('Choose a land to begin the voyage.');
 
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+    if (!mapRef.current || mapInst.current) return;
     initMap({
       container: mapRef.current,
       onCountryClick: (name, coords) => {
         setDest(name);
-        if (shipRef.current) sailTo(mapInstance.current, coords, shipRef.current, setProg, () => setProg(100));
-      }
+        setStatus('The ship sets sail...');
+        setProg(0);
+        if (shipRef.current && mapInst.current) {
+          sailTo(mapInst.current, coords, shipRef.current, setProg, () => {
+            setProg(100);
+            setStatus('Voyage complete — treasure found!');
+          });
+        }
+      },
     }).then(({ map, shipMarker }) => {
-      mapInstance.current = map;
+      mapInst.current = map;
       shipRef.current = shipMarker;
     });
-    return () => { if (mapInstance.current) mapInstance.current.remove(); };
+    return () => {
+      if (mapInst.current) mapInst.current.remove();
+      mapInst.current = null;
+    };
   }, []);
 
   return (
-    <section className="relative w-full h-[70vh] min-h-[500px] border-b-4 border-double border-ink-light/40">
-      <div ref={mapRef} className="w-full h-full" />
-      <div className="map-vignette" />
-      <div className="absolute left-5 bottom-5 w-[300px] z-[1000] p-4 bg-parchment-light/95 border-2 border-ink-light shadow-vintage">
-        <div className="font-label text-xs uppercase tracking-widest opacity-70">Current Expedition</div>
-        <div className="mt-1 text-xl font-bold font-title">{dest}</div>
-        <div className="h-1.5 mt-3 bg-ink-light/20 overflow-hidden">
-          <div className="h-full bg-ink-mid transition-all" style={{ width: `${prog}%` }} />
+    <motion.section initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="tm-map-section">
+      <div className="tm-container">
+        <h2 className="tm-h2">The Ancient Chart</h2>
+        <div className="tm-divider" />
+        <p className="tm-h2-sub">Click any kingdom to send the galleon sailing across the parchment.</p>
+      </div>
+
+      <div className="tm-container" style={{ marginTop: '1.5rem' }}>
+        <div className="tm-map-wrap">
+          <div ref={mapRef} className="tm-map" />
+          <div className="tm-map-burn" aria-hidden />
+
+          <div className="tm-compass" aria-hidden>
+            <div className="tm-compass-ring" />
+            <div className="tm-compass-needle" />
+            <span className="tm-c-n">N</span><span className="tm-c-s">S</span>
+            <span className="tm-c-e">E</span><span className="tm-c-w">W</span>
+          </div>
+
+          <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4, type: 'spring' }} className="tm-panel tm-voyage">
+            <div className="tm-panel-title">⚜ Current Expedition ⚜</div>
+            <div className="tm-dest">{dest}</div>
+            <div className="tm-progress"><div className="tm-progress-fill" style={{ width: `${prog}%` }} /></div>
+            <div className="tm-status">{status}</div>
+          </motion.div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
