@@ -4,6 +4,7 @@ import type { Map as LeafletMap, Marker } from 'leaflet';
 const API_BASE = 'https://media-api.markmykevin.workers.dev/';
 
 export interface CountryItem { name: string; onClick: () => void; }
+interface Feature { type: string; coords: [number, number]; label?: string; desc?: string; }
 
 /* ============ ENGRAVED ANTIQUE ICONS (SVG) ============ */
 const ICONS: Record<string, string> = {
@@ -18,31 +19,33 @@ const ICONS: Record<string, string> = {
   sink: `<svg class="oi" viewBox="0 0 40 32" width="40" height="32"><g fill="none" stroke="#4a3018" stroke-width="1.5" stroke-linecap="round"><path d="M6 22 L30 16 L26 26 L10 28 Z" transform="rotate(-12 20 22)"/><path d="M18 14 V4 M18 6 L26 8 L18 11"/><path d="M4 30 C8 27 12 27 16 30 M22 30 C26 27 30 27 34 30" opacity=".6"/></g></svg>`,
 };
 
-/* ============ LAND & SEA FEATURES ============ */
-const LANDMARKS: { type: keyof typeof ICONS; coords: [number, number]; label: string }[] = [
-  { type: 'volcano', coords: [37.75, 14.99], label: 'Mons Aetna — the mountain that breathes fire' },
-  { type: 'volcano', coords: [35.36, 138.73], label: 'Fusi Yama — the sleeping sentinel' },
-  { type: 'volcano', coords: [-6.1, 105.42], label: 'Cracatoa — isle that vanished in smoke' },
-  { type: 'volcano', coords: [63.63, -19.62], label: 'Yma Fire — the ice that burns' },
-  { type: 'mountain', coords: [46.5, 9.8], label: 'Montes Alpi — peaks that scrape heaven' },
-  { type: 'mountain', coords: [28.0, 86.9], label: 'Himalaya — throne of the snow gods' },
-  { type: 'mountain', coords: [-32.6, -70.1], label: 'Cordillera — spine of the western world' },
-  { type: 'mountain', coords: [39.5, -105.8], label: 'Montes Robusti — walls of the wild west' },
-  { type: 'mountain', coords: [31.06, -7.9], label: 'Atlas — where the sky is held aloft' },
-  { type: 'forest', coords: [-3.5, -62.0], label: 'Silva Umbra — the whispering green deep' },
-  { type: 'forest', coords: [48.0, 8.2], label: 'Silva Nigra — the black wood of old tales' },
-  { type: 'forest', coords: [60.0, 90.0], label: 'Taiga — the endless frozen wood' },
-  { type: 'forest', coords: [0.5, 114.0], label: 'Borneo — jungle of the horned beasts' },
-  { type: 'desert', coords: [23.0, 12.0], label: 'Sahara — the sea of sand and mirage' },
-  { type: 'desert', coords: [43.0, 105.0], label: 'Gobi — the whispering dust waste' },
-  { type: 'desert', coords: [-24.0, -69.0], label: 'Atacama — where rain never falls' },
-  { type: 'swamp', coords: [-19.5, 22.5], label: 'Okavango — the marsh of a thousand reeds' },
+/* ============ LAND FEATURES (clickable, with journal notes) ============ */
+const LANDMARKS: Feature[] = [
+  { type: 'volcano', coords: [37.75, 14.99], label: 'Mons Aetna', desc: 'Thrice this century it woke, spilling fire upon the Sicilian night. We crossed ourselves and rowed on.' },
+  { type: 'volcano', coords: [35.36, 138.73], label: 'Fusi Yama', desc: 'A perfect cone of silence. Pilgrims climb at dawn to watch the sun rise from its crater rim.' },
+  { type: 'volcano', coords: [-6.1, 105.42], label: 'Cracatoa', desc: 'The isle that tore itself asunder. The sea still remembers the roar, and so do the charts.' },
+  { type: 'volcano', coords: [63.63, -19.62], label: 'Yma Fire', desc: 'Ice above, fire below. When it speaks, the skies of the north close like a door.' },
+  { type: 'mountain', coords: [46.5, 9.8], label: 'Montes Alpi', desc: 'The wall between worlds. Hannibal\u2019s elephants once bled upon these passes.' },
+  { type: 'mountain', coords: [28.0, 86.9], label: 'Himalaya', desc: 'The roof of the world. Prayers freeze mid-air; flags snap in the thin wind.' },
+  { type: 'mountain', coords: [-32.6, -70.1], label: 'Cordillera', desc: 'A spine of stone running the length of a continent. Condors ride its thermals.' },
+  { type: 'mountain', coords: [39.5, -105.8], label: 'Montes Robusti', desc: 'Blue walls of the wild west. Beavers and outlaws alike hide in their folds.' },
+  { type: 'mountain', coords: [31.06, -7.9], label: 'Atlas', desc: 'Old Atlas bows here, holding the sky from the sand.' },
+  { type: 'forest', coords: [-3.5, -62.0], label: 'Silva Umbra', desc: 'A green ocean that breathes. Rivers wander through it like lost veins.' },
+  { type: 'forest', coords: [48.0, 8.2], label: 'Silva Nigra', desc: 'Dark pines where the sun enters only by permission. Wolves keep the old paths.' },
+  { type: 'forest', coords: [60.0, 90.0], label: 'Taiga', desc: 'An endless wood of frost. The aurora burns above its silent crown.' },
+  { type: 'forest', coords: [0.5, 114.0], label: 'Borneo', desc: 'Vines like ship ropes, birds like flames. The headhunters\u2019 rivers run brown.' },
+  { type: 'desert', coords: [23.0, 12.0], label: 'Sahara', desc: 'Dunes that walk with the wind. Caravans follow the stars and camel bones.' },
+  { type: 'desert', coords: [43.0, 105.0], label: 'Gobi', desc: 'A cold desert of whispering dust. Dragon bones surface after every storm.' },
+  { type: 'desert', coords: [-24.0, -69.0], label: 'Atacama', desc: 'The driest place on Earth. Rain here is a rumor; the sky is always clear.' },
+  { type: 'swamp', coords: [-19.5, 22.5], label: 'Okavango', desc: 'A river that never finds the sea, blooming into a marsh of reeds and hippos.' },
 ];
 
-const OCEANICA: { type: keyof typeof ICONS; coords: [number, number]; label?: string }[] = [
-  { type: 'serpent', coords: [45, -40], label: 'Mare Serpentis — here be monsters' },
-  { type: 'whale', coords: [-45, 90], label: 'Leviathan — the great whale road' },
-  { type: 'whale', coords: [10, -140] },
+/* ============ SEA FEATURES ============ */
+const OCEANICA: Feature[] = [
+  { type: 'serpent', coords: [45, -40], label: 'Mare Serpentis', desc: 'Many crews swear by it: a coil of black scale longer than the mainmast.' },
+  { type: 'whale', coords: [-45, 90], label: 'Leviathan', desc: 'The gentle leviathan. Its song carries for leagues beneath the keel.' },
+  { type: 'whale', coords: [10, -140] , label: 'Great Whale Road', desc: 'Here the whales migrate in silver lines, singing to the southern ice.' },
+  { type: 'sink', coords: [26, -70], label: 'Triangulum Fatalis', desc: 'Compasses spin, ships vanish, and the sea gives back only silence.' },
   { type: 'wave', coords: [10, -120] }, { type: 'wave', coords: [-10, -100] },
   { type: 'wave', coords: [30, -40] }, { type: 'wave', coords: [-30, -20] },
   { type: 'wave', coords: [0, 70] }, { type: 'wave', coords: [-40, 140] },
@@ -77,6 +80,15 @@ async function getArchiveImage(): Promise<any | null> {
 
 const safe = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
 
+/* Close a layer's popup after ms, only if it's still the same popup & open */
+function autoClose(layer: any, ms: number) {
+  const p = layer.getPopup();
+  setTimeout(() => {
+    try { if (layer.getPopup() === p && layer.isPopupOpen && layer.isPopupOpen()) layer.closePopup(); } catch {}
+  }, ms);
+}
+
+/* ============ COUNTRY POPUP (image + note, closes in 5s) ============ */
 async function openArchivePopup(lyr: any, name: string) {
   lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🕰</div><p class="tm-popup-desc">Consulting the archives…</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
   const item = await getArchiveImage();
@@ -85,6 +97,7 @@ async function openArchivePopup(lyr: any, name: string) {
     : `<div class="popup-img-fallback">🗺</div>`;
   const desc = item?.description || item?.title || 'The archives are silent of this land.';
   lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${img}<p class="tm-popup-desc">"${safe(desc)}"</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
+  autoClose(lyr, 5000); // ← country popup vanishes after 5s
 }
 
 /* ============ HELPERS ============ */
@@ -93,35 +106,53 @@ function baseStyle(name: string) {
   const green = hashName(name) % 2 === 0;
   return { color: '#5d4a26', weight: 1, fillColor: green ? '#8f9e7b' : '#a8916b', fillOpacity: 0.55 };
 }
-function featureIcon(type: keyof typeof ICONS, label?: string) {
-  return `<div class="lm lm-${type}">${ICONS[type]}${label ? `<span class="lm-label ${type === 'serpent' || type === 'whale' || type === 'wave' ? 'ocean' : ''}">${label}</span>` : ''}</div>`;
+function featureIcon(type: string, label?: string) {
+  const ocean = type === 'serpent' || type === 'whale' || type === 'wave';
+  return `<div class="lm lm-${type}">${ICONS[type]}${label ? `<span class="lm-label ${ocean ? 'ocean' : ''}">${label}</span>` : ''}</div>`;
 }
 
 /* ============ MAP INIT ============ */
 export async function initMap(options: { container: HTMLElement; onCountryClick: (name: string, coords: [number, number]) => void }) {
   const { container, onCountryClick } = options;
-  refillCache(); // pre-warm image API
+  refillCache();
 
   const map = L.map(container, { zoomControl: false, minZoom: 2, maxZoom: 7, worldCopyJump: true }).setView([20, 0], 2);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-  // Ocean currents (animated flowing lines)
   CURRENTS.forEach((c) => {
     L.polyline(c.points, { className: 'current' }).addTo(map);
     if (c.label && c.at) L.marker(c.at, { icon: L.divIcon({ className: 'lm-wrap', html: `<span class="lm-label ocean">${c.label}</span>`, iconSize: [220, 24], iconAnchor: [0, 12] }), interactive: false }).addTo(map);
   });
 
-  // Bermuda Triangle
   L.polygon(BERMUDA, { className: 'bm-tri', color: '#8a3b1e', weight: 2, dashArray: '6 6', fillColor: '#8a3b1e', fillOpacity: 0.08 }).addTo(map);
-  L.marker([26, -70], { icon: L.divIcon({ className: 'lm-wrap', html: featureIcon('sink', 'Triangulum Fatalis — where ships vanish'), iconSize: [240, 40], iconAnchor: [20, 20] }), interactive: false }).addTo(map);
 
-  // Land + sea symbols
+  /* Clickable landmarks: animation + note popup, closes in 4s */
   [...LANDMARKS, ...OCEANICA].forEach((f) => {
-    L.marker(f.coords, { icon: L.divIcon({ className: 'lm-wrap', html: featureIcon(f.type, (f as any).label), iconSize: [250, 48], iconAnchor: [24, 24] }), interactive: false, keyboard: false }).addTo(map);
+    const clickable = f.type !== 'wave';
+    const marker = L.marker(f.coords, {
+      icon: L.divIcon({ className: 'lm-wrap', html: featureIcon(f.type, f.label), iconSize: [250, 48], iconAnchor: [24, 24] }),
+      interactive: clickable, keyboard: clickable,
+    }).addTo(map);
+
+    if (clickable) {
+      marker.on('click', () => {
+        const el = marker.getElement() as HTMLElement | undefined;
+        if (el) {
+          el.classList.remove('lm-boom');
+          void el.offsetWidth; // restart animation
+          el.classList.add('lm-boom');
+          setTimeout(() => el.classList.remove('lm-boom'), 1300);
+        }
+        marker.bindPopup(
+          `<div class="tm-popup"><div class="tm-popup-title">✦ ${safe(f.label || 'Terra Incognita')}</div><p class="tm-popup-desc">"${safe(f.desc || 'An unmarked wonder of the old world.')}"</p></div>`,
+          { maxWidth: 240, className: 'tm-popup-wrap', offset: [0, -8] }
+        ).openPopup();
+        autoClose(marker, 4000); // ← landmark popup vanishes after 4s
+      });
+    }
   });
 
-  // Ship
   const shipIcon = L.divIcon({ className: 'ship-marker', html: `<div class="ship"><div class="mast"></div><div class="sail"></div><div class="flag"></div><div class="ship-body"></div><div class="wake"></div></div>`, iconSize: [70, 70], iconAnchor: [35, 35] });
   const shipMarker = L.marker([14.5995, 120.9842], { icon: shipIcon }).addTo(map);
   const countryList: CountryItem[] = [];
