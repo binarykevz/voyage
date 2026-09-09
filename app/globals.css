@@ -424,3 +424,148 @@ body { font-family: 'Almendra', 'IM Fell English', Georgia, serif; }
 .tm-scale-bars i:nth-child(odd) { background: #3b2a14; }
 .tm-scale-bars i:nth-child(even) { background: #e9d9ae; }
 .tm-scale-labels { display: flex; justify-content: space-between; font-family: 'Special Elite', monospace; font-size: 8px; color: #3b2a14; margin-top: 2px; }
+/* ============ DEEPER ANCIENT PARCHMENT COLORS ============ */
+.tm-map { background: #d4b88c !important; }
+.leaflet-container { background: #d4b88c !important; }
+
+/* Aged parchment texture with tea stains */
+.tm-aging {
+  position: absolute; inset: 0; pointer-events: none; z-index: 399;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(139, 90, 43, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 75% 60%, rgba(101, 67, 33, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 45% 85%, rgba(160, 120, 60, 0.07) 0%, transparent 40%);
+  mix-blend-mode: multiply;
+  animation: agingPulse 12s ease-in-out infinite alternate;
+}
+@keyframes agingPulse {
+  from { opacity: 0.6; }
+  to { opacity: 0.85; }
+}
+
+/* Foxing spots (brown age spots on old paper) */
+.tm-aging::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(139, 90, 43, 0.3) 0px, transparent 3px),
+    radial-gradient(circle at 68% 42%, rgba(101, 67, 33, 0.25) 0px, transparent 4px),
+    radial-gradient(circle at 82% 78%, rgba(139, 90, 43, 0.28) 0px, transparent 3px),
+    radial-gradient(circle at 35% 65%, rgba(101, 67, 33, 0.22) 0px, transparent 5px),
+    radial-gradient(circle at 92% 15%, rgba(139, 90, 43, 0.26) 0px, transparent 3px);
+  opacity: 0.7;
+}
+
+/* Update panel colors to match aged parchment */
+.tm-panel { background: linear-gradient(rgba(212, 184, 140, 0.96), rgba(196, 165, 110, 0.96)); }
+.tm-cartouche { background: linear-gradient(rgba(212, 184, 140, 0.96), rgba(196, 165, 110, 0.96)); }
+.tm-scale { background: rgba(212, 184, 140, 0.92); }
+.tm-popup-wrap .leaflet-popup-content-wrapper { background: linear-gradient(#d4b88c, #c4a56e) !important; }
+
+/* ============ REPOSITIONED ELEMENTS (avoid frame overlap) ============ */
+.tm-cartouche { top: 32px; }
+.tm-compass { top: 28px; right: 28px; }
+.tm-scale { right: 28px; bottom: 28px; }
+.tm-voyage { left: 28px; bottom: 28px; width: 280px; }
+
+/* ============ CORNER DECORATIONS ============ */
+.tm-corner {
+  position: absolute; z-index: 610; font-size: 1.6rem;
+  filter: drop-shadow(0 2px 4px rgba(40, 25, 5, 0.5));
+  animation: cornerFloat 4s ease-in-out infinite;
+}
+.tm-corner-tl { top: 32px; left: 28px; }
+.tm-corner-tr { top: 32px; right: 120px; animation-delay: 1s; }
+.tm-corner-bl { bottom: 32px; left: 320px; animation-delay: 2s; }
+.tm-corner-br { bottom: 32px; right: 220px; animation-delay: 3s; }
+@keyframes cornerFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+/* ============ ENHANCED MIST (more atmospheric) ============ */
+.tm-mist {
+  position: absolute; inset: -20%; pointer-events: none; z-index: 400;
+  background:
+    radial-gradient(circle at 25% 35%, rgba(212, 184, 140, 0.25), transparent 45%),
+    radial-gradient(circle at 75% 65%, rgba(196, 165, 110, 0.18), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(230, 213, 168, 0.12), transparent 60%);
+  mix-blend-mode: soft-light;
+  animation: mistDrift 30s ease-in-out infinite alternate;
+  filter: blur(8px);
+}
+@keyframes mistDrift {
+  from { transform: translate(-4%, -3%) rotate(0deg); opacity: 0.6; }
+  to { transform: translate(5%, 4%) rotate(3deg); opacity: 0.9; }
+}
+
+/* ============ ANIMATED PARCHMENT BREATHING ============ */
+.tm-map-wrap {
+  animation: parchmentBreathe 8s ease-in-out infinite;
+}
+@keyframes parchmentBreathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 184, 140, 0); }
+  50% { box-shadow: 0 0 40px 0 rgba(212, 184, 140, 0.3); }
+}
+
+/* ============ ENHANCED COMPASS NEEDLE ============ */
+.tm-compass-needle {
+  animation: needleSway 6s ease-in-out infinite;
+}
+@keyframes needleSway {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-8deg); }
+  25% { transform: translate(-50%, -50%) rotate(5deg); }
+  50% { transform: translate(-50%, -50%) rotate(-3deg); }
+  75% { transform: translate(-50%, -50%) rotate(8deg); }
+}
+
+/* ============ WIND ROSE DIRECTIONS (add to map) ============ */
+.wind-label {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 10px;
+  color: rgba(101, 67, 33, 0.7);
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  animation: windFade 2s ease both;
+}
+@keyframes windFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ ANIMATED SEA CURRENTS (enhanced) ============ */
+.current {
+  stroke: rgba(101, 67, 33, 0.4) !important;
+  stroke-width: 2.5 !important;
+  stroke-dasharray: 3 12 !important;
+  animation: currentFlow 10s linear infinite !important;
+}
+@keyframes currentFlow {
+  to { stroke-dashoffset: -150; }
+}
+
+/* ============ ENHANCED RHUMB LINES ============ */
+.rhumb {
+  stroke: rgba(101, 67, 33, 0.18) !important;
+  stroke-dasharray: 2 8 !important;
+  animation: rhumbFlow 12s linear infinite;
+}
+@keyframes rhumbFlow {
+  to { stroke-dashoffset: -100; }
+}
+
+/* ============ PARCHMENT TEXTURE OVERLAY ============ */
+.tm-map::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.82 0 0 0 0 0.72 0 0 0 0 0.55 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============ VINTAGE FILTER FOR MAP TILES ============ */
+.leaflet-tile {
+  filter: sepia(0.75) saturate(0.55) contrast(0.85) brightness(0.92) !important;
+}
