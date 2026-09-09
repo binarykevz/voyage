@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { initMap, sailTo } from '../lib/mapUtils';
+import ThornFrame from './ThornFrame';
 
 export default function MapSection() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -16,24 +17,13 @@ export default function MapSection() {
     initMap({
       container: mapRef.current,
       onCountryClick: (name, coords) => {
-        setDest(name);
-        setStatus('The ship sets sail...');
-        setProg(0);
+        setDest(name); setStatus('The ship sets sail...'); setProg(0);
         if (shipRef.current && mapInst.current) {
-          sailTo(mapInst.current, coords, shipRef.current, setProg, () => {
-            setProg(100);
-            setStatus('Voyage complete — treasure found!');
-          });
+          sailTo(mapInst.current, coords, shipRef.current, setProg, () => { setProg(100); setStatus('Voyage complete — treasure found!'); });
         }
       },
-    }).then(({ map, shipMarker }) => {
-      mapInst.current = map;
-      shipRef.current = shipMarker;
-    });
-    return () => {
-      if (mapInst.current) mapInst.current.remove();
-      mapInst.current = null;
-    };
+    }).then(({ map, shipMarker }) => { mapInst.current = map; shipRef.current = shipMarker; });
+    return () => { if (mapInst.current) mapInst.current.remove(); mapInst.current = null; };
   }, []);
 
   return (
@@ -41,13 +31,14 @@ export default function MapSection() {
       <div className="tm-container">
         <h2 className="tm-h2">The Ancient Chart</h2>
         <div className="tm-divider" />
-        <p className="tm-h2-sub">Click any kingdom to send the galleon sailing across the parchment.</p>
+        <p className="tm-h2-sub">Click any kingdom to summon its relic from the archives &amp; send the galleon sailing.</p>
       </div>
 
       <div className="tm-container" style={{ marginTop: '1.5rem' }}>
         <div className="tm-map-wrap">
           <div ref={mapRef} className="tm-map" />
           <div className="tm-map-burn" aria-hidden />
+          <ThornFrame />
 
           <div className="tm-compass" aria-hidden>
             <div className="tm-compass-ring" />
