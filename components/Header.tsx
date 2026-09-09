@@ -3,20 +3,22 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
-  const [clock, setClock] = useState('Loading...');
+  const [clock, setClock] = useState('Charting time...');
   useEffect(() => {
-    const update = () => setClock(new Date().toLocaleString());
-    update();
-    const i = setInterval(update, 1000);
+    const u = () => setClock(new Date().toLocaleString());
+    u();
+    const i = setInterval(u, 1000);
     return () => clearInterval(i);
   }, []);
 
   return (
-    <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="relative py-10 px-4 text-center border-b-4 border-double border-ink-light/40 z-10 bg-parchment">
-      <h1 className="font-title text-4xl md:text-6xl uppercase tracking-widest text-ink-dark text-shadow-vintage">The Explorer's Journal</h1>
-      <p className="mt-3 text-ink-mid italic font-old text-lg">A Chronicle of Distant Lands</p>
-      <div className="mt-6 flex justify-center gap-3 flex-wrap">
-        <span className="px-4 py-2 border-2 border-dashed border-ink-light bg-parchment-light/50 font-label text-xs">{clock}</span>
+    <motion.header initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="tm-header">
+      <motion.div className="tm-seal" animate={{ rotate: [0, 6, -6, 0] }} transition={{ duration: 6, repeat: Infinity }}>✦</motion.div>
+      <h1 className="tm-title tm-gold">The Explorer&apos;s Journal</h1>
+      <p className="tm-subtitle">~ A Chronicle of Distant Lands &amp; Buried Treasure ~</p>
+      <div className="tm-flex tm-meta">
+        <span className="tm-stamp">🕰 {clock}</span>
+        <span className="tm-stamp">⚓ Voyage No. 42</span>
       </div>
     </motion.header>
   );
