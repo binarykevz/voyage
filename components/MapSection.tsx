@@ -38,14 +38,17 @@ export default function MapSection() {
         <div className="tm-map-wrap">
           <div ref={mapRef} className="tm-map" />
           <div className="tm-mist" aria-hidden />
+          <div className="tm-aging" aria-hidden />
           <div className="tm-map-burn" aria-hidden />
           <ThornFrame />
 
+          {/* Repositioned: moved down to avoid frame */}
           <div className="tm-cartouche">
             <div className="tm-cart-title">Tabula Terrae</div>
             <div className="tm-cart-sub">The Great Chart of the Known World · Anno 1692</div>
           </div>
 
+          {/* Repositioned: moved inward */}
           <div className="tm-compass" aria-hidden>
             <div className="tm-compass-ring" />
             <div className="tm-compass-needle" />
@@ -53,17 +56,25 @@ export default function MapSection() {
             <span className="tm-c-e">E</span><span className="tm-c-w">W</span>
           </div>
 
+          {/* Repositioned: moved inward */}
           <div className="tm-scale" aria-hidden>
             <div className="tm-scale-bars"><i /><i /><i /><i /></div>
             <div className="tm-scale-labels"><span>0</span><span>100</span><span>200</span><span>300</span><span>Leagues</span></div>
           </div>
 
+          {/* Repositioned: moved inward */}
           <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4, type: 'spring' }} className="tm-panel tm-voyage">
             <div className="tm-panel-title">⚜ Current Expedition ⚜</div>
             <div className="tm-dest">{dest}</div>
             <div className="tm-progress"><div className="tm-progress-fill" style={{ width: `${prog}%` }} /></div>
             <div className="tm-status">{status}</div>
           </motion.div>
+
+          {/* New decorative corner elements */}
+          <div className="tm-corner tm-corner-tl">⚓</div>
+          <div className="tm-corner tm-corner-tr">☸</div>
+          <div className="tm-corner tm-corner-bl">🗝️</div>
+          <div className="tm-corner tm-corner-br">📜</div>
         </div>
       </div>
     </motion.section>
