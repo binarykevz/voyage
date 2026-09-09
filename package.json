@@ -1,0 +1,38 @@
+{
+  "name": "explorer-journal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:cloudflare": "npx @cloudflare/next-on-pages --watch",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:dev": "wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
+    "pages:deploy": "npx @cloudflare/next-on-pages && wrangler pages deploy .vercel/output/static"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "framer-motion": "^11.3.19",
+    "gsap": "^3.12.5",
+    "leaflet": "^1.9.4",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.2",
+    "@cloudflare/workers-types": "^4.20240718.0",
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3",
+    "vercel": "^34.2.8",
+    "wrangler": "^3.64.0"
+  }
+}
