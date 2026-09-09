@@ -127,18 +127,51 @@ function addGraticule(map: LeafletMap) {
 
 function addRhumbRoses(map: LeafletMap) {
   const centers: [number, number][] = [[30, -40], [-25, 80], [10, -150]];
+  const windNames = ['Tramontana', 'Greco', 'Levante', 'Scirocco', 'Ostro', 'Libeccio', 'Ponente', 'Maestro'];
+  
   centers.forEach((c) => {
     for (let k = 0; k < 16; k++) {
       const a = (k * 22.5 * Math.PI) / 180;
       const lat = Math.max(-80, Math.min(82, c[0] + Math.cos(a) * 55));
       const lng = c[1] + Math.sin(a) * 88;
       L.polyline([c, [lat, lng]], { className: 'rhumb', interactive: false }).addTo(map);
+      
+      // Add wind direction labels at 45° intervals
+      if (k % 2 === 0 && windNames[k / 2]) {
+        const labelLat = c[0] + Math.cos(a) * 38;
+        const labelLng = c[1] + Math.sin(a) * 58;
+        L.marker([labelLat, labelLng], {
+          icon: L.divIcon({
+            className: 'lm-wrap',
+            html: `<span class="wind-label">${windNames[k / 2]}</span>`,
+            iconSize: [80, 14],
+            iconAnchor: [40, 7]
+          }),
+          interactive: false
+        }).addTo(map);
+      }
     }
-    const rose = L.marker(c, { icon: L.divIcon({ className: 'lm-wrap rose-wrap', html: ROSE_SVG, iconSize: [86, 86], iconAnchor: [43, 43] }), interactive: true, keyboard: false }).addTo(map);
+    
+    const rose = L.marker(c, {
+      icon: L.divIcon({
+        className: 'lm-wrap rose-wrap',
+        html: ROSE_SVG,
+        iconSize: [86, 86],
+        iconAnchor: [43, 43]
+      }),
+      interactive: true,
+      keyboard: false
+    }).addTo(map);
+    
     rose.on('click', (e: any) => {
       if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent);
       const el = rose.getElement() as HTMLElement | undefined;
-      if (el) { el.classList.remove('rose-spin'); void el.offsetWidth; el.classList.add('rose-spin'); setTimeout(() => el.classList.remove('rose-spin'), 1500); }
+      if (el) {
+        el.classList.remove('rose-spin');
+        void el.offsetWidth;
+        el.classList.add('rose-spin');
+        setTimeout(() => el.classList.remove('rose-spin'), 1500);
+      }
       spawnRipple(map, c, 'gold');
     });
   });
