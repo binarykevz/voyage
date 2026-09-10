@@ -4,38 +4,32 @@ import { NextResponse } from 'next/server';
 
 const API_BASE = 'https://media-api.markmykevin.workers.dev/';
 
-export async function GET() {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await params; // Next 15: params is a Promise
+  const url = new URL(req.url);
+  const target = `${API_BASE}/api/${path.join('/')}${url.search}`;
+
   try {
-    const [imgRes, vidRes] = await Promise.allSettled([
-      fetch(`${API_BASE}/api/images?page=1&pageSize=1`, {
-        headers: { Accept: 'application/json' },
-      }),
-      fetch(`${API_BASE}/api/videos?page=1&pageSize=1`),
-    ]);
-
-    let photos = 0;
-    let videos = 0;
-
-    if (imgRes.status === 'fulfilled' && imgRes.value.ok) {
-      const data = await imgRes.value.json();
-      photos = data.meta?.total ?? data.data?.length ?? 0;
-    }
-
-    if (vidRes.status === 'fulfilled' && vidRes.value.ok) {
-      const data = await vidRes.value.json();
-      videos = data.meta?.total ?? data.data?.length ?? 0;
-    }
-
-    return NextResponse.json({
-      total: photos + videos,
-      photos,
-      videos,
-      apiOnline: photos > 0 || videos > 0,
+    const res = await fetch(target, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
     });
-  } catch (err) {
-    return NextResponse.json(
-      { total: 0, photos: 0, videos: 0, apiOnline: false },
-      { status: 500 }
+    const body = await res.text();
+    return new Response(body, {
+      status: res.status,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({ success: false, error: String(e?.message || e), target }),
+      { status: 502, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
 }
