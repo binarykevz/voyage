@@ -23,22 +23,34 @@ const ICONS: Record<string, string> = {
 };
 
 const LANDMARKS: Feature[] = [
+  // — Volcanoes —
+  { type: 'volcano', coords: [13.257, 123.685], label: 'Mayon', desc: 'The perfect cone of Bicol. She wears a crown of cloud and breathes ash over the palm fields.' },
   { type: 'volcano', coords: [37.75, 14.99], label: 'Mons Aetna', desc: 'Thrice this century it woke, spilling fire upon the Sicilian night.' },
   { type: 'volcano', coords: [35.36, 138.73], label: 'Fusi Yama', desc: 'A perfect cone of silence. Pilgrims climb at dawn to greet the sun.' },
   { type: 'volcano', coords: [-6.1, 105.42], label: 'Cracatoa', desc: 'The isle that tore itself asunder. The sea still remembers the roar.' },
   { type: 'volcano', coords: [63.63, -19.62], label: 'Yma Fire', desc: 'Ice above, fire below. When it speaks, the northern skies close like a door.' },
+  // — Mountains —
   { type: 'mountain', coords: [46.5, 9.8], label: 'Montes Alpi', desc: 'The wall between worlds. Hannibal\u2019s elephants bled upon these passes.' },
   { type: 'mountain', coords: [28.0, 86.9], label: 'Himalaya', desc: 'The roof of the world. Prayers freeze mid-air in the thin wind.' },
   { type: 'mountain', coords: [-32.6, -70.1], label: 'Cordillera', desc: 'A spine of stone running the length of a continent.' },
   { type: 'mountain', coords: [39.5, -105.8], label: 'Montes Robusti', desc: 'Blue walls of the wild west; outlaws hide in their folds.' },
   { type: 'mountain', coords: [31.06, -7.9], label: 'Atlas', desc: 'Old Atlas bows here, holding the sky from the sand.' },
+  // — Forests —
   { type: 'forest', coords: [-3.5, -62.0], label: 'Silva Umbra', desc: 'A green ocean that breathes; rivers wander it like lost veins.' },
   { type: 'forest', coords: [48.0, 8.2], label: 'Silva Nigra', desc: 'Dark pines where the sun enters only by permission.' },
   { type: 'forest', coords: [60.0, 90.0], label: 'Taiga', desc: 'An endless wood of frost beneath the burning aurora.' },
   { type: 'forest', coords: [0.5, 114.0], label: 'Borneo', desc: 'Vines like ship ropes, birds like flames.' },
+  // — Deserts (the great sand belts) —
   { type: 'desert', coords: [23.0, 12.0], label: 'Sahara', desc: 'Dunes that walk with the wind; caravans follow stars and bones.' },
+  { type: 'desert', coords: [24.0, 45.0], label: 'Desertum Arabium', desc: 'The Empty Quarter; dunes roll like a frozen golden sea.' },
+  { type: 'desert', coords: [39.0, 82.0], label: 'Taklamakan', desc: 'The desert of no return. Caravans enter; only whispers exit.' },
   { type: 'desert', coords: [43.0, 105.0], label: 'Gobi', desc: 'A cold desert of whispering dust and dragon bones.' },
+  { type: 'desert', coords: [27.0, 70.0], label: 'Thar', desc: 'The golden sands where peacocks dance between the dunes.' },
   { type: 'desert', coords: [-24.0, -69.0], label: 'Atacama', desc: 'The driest place on Earth. Rain here is a rumor.' },
+  { type: 'desert', coords: [-23.0, 20.0], label: 'Kalahari', desc: 'The thirst land; red sand and an older silence.' },
+  { type: 'desert', coords: [-24.7, 15.3], label: 'Namib', desc: 'The oldest sand on Earth, fog-fed and rust-red.' },
+  { type: 'desert', coords: [35.0, -116.0], label: 'Mojave', desc: 'The painted waste; Joshua trees stand as its sentinels.' },
+  // — Swamp —
   { type: 'swamp', coords: [-19.5, 22.5], label: 'Okavango', desc: 'A river that never finds the sea, blooming into reeds and hippos.' },
 ];
 
