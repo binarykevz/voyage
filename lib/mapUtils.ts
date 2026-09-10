@@ -191,7 +191,7 @@ function featureIcon(type: string, label?: string) {
 /* ============ MAP INIT ============ */
 export async function initMap(options: { container: HTMLElement; onCountryClick: (name: string, coords: [number, number]) => void }) {
   const { container, onCountryClick } = options;
-  refillCache();
+     prewarmArchive();
 
   const map = L.map(container, { zoomControl: false, minZoom: 2, maxZoom: 7, worldCopyJump: true }).setView([20, 0], 2);
   L.control.zoom({ position: 'topleft' }).addTo(map);
