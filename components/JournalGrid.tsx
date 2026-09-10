@@ -30,6 +30,7 @@ export default function JournalGrid() {
               transition={{ duration: 0.7, delay: (i % 3) * 0.12 }}
               className="tm-card"
             >
+              <span className="tm-mini-seal" aria-hidden>✦</span>
               <div className="tm-badge">{item.mediaType === 'image' ? 'Photograph' : 'Moving Picture'}</div>
               <div className="tm-media">
                 {item.mediaType === 'image' ? (
