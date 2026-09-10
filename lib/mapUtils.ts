@@ -86,20 +86,7 @@ const TERRA: [number, number, string][] = [
 const BERMUDA: [number, number][] = [[25, -80], [32, -64], [18, -65]];
 
 /* ============ IMAGE API ============ */
-let archiveCache: any[] = [];
-async function refillCache() {
-  try {
-    const r = await fetch(`${API_BASE}/api/images/random?limit=4`, { headers: { Accept: 'application/json' } });
-    if (!r.ok) return;
-    const j = await r.json();
-    if (j?.success && Array.isArray(j.data)) archiveCache.push(...j.data.filter((d: any) => d?.url && String(d.url).startsWith('http')));
-  } catch {}
-}
-async function getArchiveImage(): Promise<any | null> {
-  if (!archiveCache.length) await prewarmArchive();
-  if (!archiveCache.length) await prewarmArchive();
-  return archiveCache.shift() || null;
-}
+
 const safe = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
 
 function autoClose(layer: any, ms: number) {
