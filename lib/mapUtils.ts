@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import type { Map as LeafletMap, Marker } from 'leaflet';
+import { getArchiveImage, prewarmArchive } from './api';
 
 const API_BASE = 'https://media-api.markmykevin.workers.dev/';
 
