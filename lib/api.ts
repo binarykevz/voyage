@@ -1,4 +1,5 @@
-const API_BASE = 'https://media-api.markmykevin.workers.dev/';
+const REMOTE = 'https://media-api.markmykevin.workers.dev';
+const PROXY = '/api/archive'; // same-origin → immune to CORS
 
 export interface MediaItem {
   id?: string;
@@ -16,29 +17,21 @@ export interface Stats {
   videos: number | null;
   total: number | null;
   apiOnline: boolean;
+  source: 'proxy' | 'direct' | 'demo';
 }
 
-/* Pull a total count from ANY response shape the API might use */
-function extractTotal(json: any): number | null {
-  if (!json || typeof json !== 'object') return null;
-  const candidates: any[] = [
-    json?.meta?.total, json?.total, json?.count,
-    json?.pagination?.total, json?.data?.total, json?.data?.count,
-  ];
-  for (const c of candidates) {
-    const n = Number(c);
-    if (Number.isFinite(n)) return n;
-  }
-  for (const key of ['data', 'images', 'videos', 'results', 'items']) {
-    const v = json?.[key];
-    if (Array.isArray(v)) return v.length;
-  }
-  return null;
+/* The API returns `type`, older code expected `mediaType` — accept both */
+function normalize(item: any, fallback: 'image' | 'video'): MediaItem {
+  const t = item?.mediaType || item?.type;
+  return {
+    ...item,
+    mediaType: t === 'video' ? 'video' : t === 'image' ? 'image' : fallback,
+  };
 }
 
-async function tryFetch(url: string): Promise<any | null> {
+async function getJson(url: string): Promise<any | null> {
   try {
-    const r = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
     if (!r.ok) return null;
     return await r.json();
   } catch {
@@ -46,60 +39,104 @@ async function tryFetch(url: string): Promise<any | null> {
   }
 }
 
-/* Try several endpoint shapes so the manifest NEVER reads zero/offline */
+const DEMO: MediaItem[] = [
+  { url: 'https://picsum.photos/seed/relic1/640/480', title: 'Demo Relic I', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
+  { url: 'https://picsum.photos/seed/relic2/640/480', title: 'Demo Relic II', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
+  { url: 'https://picsum.photos/seed/relic3/640/480', title: 'Demo Relic III', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
+];
+
+function totalOf(j: any): number | null {
+  const c = [j?.meta?.total, j?.total, j?.count];
+  for (const v of c) { const n = Number(v); if (Number.isFinite(n)) return n; }
+  return Array.isArray(j?.data) ? j.data.length : null;
+}
+
+/* ---------- STATS ---------- */
 export async function getStatsResilient(): Promise<Stats> {
   let photos: number | null = null;
   let videos: number | null = null;
   let online = false;
+  let source: Stats['source'] = 'demo';
 
-  for (const u of [
-    `${API_BASE}/api/images?page=1&pageSize=1`,
-    `${API_BASE}/api/images?limit=1`,
-    `${API_BASE}/api/images`,
-  ]) {
-    const j = await tryFetch(u);
-    if (j) { online = true; const t = extractTotal(j); if (t != null) { photos = t; break; } }
-  }
-  if (photos == null) {
-    const j = await tryFetch(`${API_BASE}/api/images/random?limit=6`);
-    if (j) { online = true; const t = extractTotal(j); if (t != null) photos = t; }
+  const imgUrls = [
+    `${PROXY}/images?page=1&pageSize=1`,
+    `${REMOTE}/api/images?page=1&pageSize=1`,
+  ];
+  for (const u of imgUrls) {
+    const j = await getJson(u);
+    if (j?.success || j?.data) {
+      online = true;
+      source = u.startsWith(PROXY) ? 'proxy' : 'direct';
+      photos = totalOf(j);
+      break;
+    }
   }
 
-  for (const u of [
-    `${API_BASE}/api/videos?page=1&pageSize=1`,
-    `${API_BASE}/api/videos?limit=1`,
-    `${API_BASE}/api/videos`,
-  ]) {
-    const j = await tryFetch(u);
-    if (j) { online = true; const t = extractTotal(j); if (t != null) { videos = t; break; } }
-  }
-  if (videos == null) {
-    const j = await tryFetch(`${API_BASE}/api/videos/random?limit=3`);
-    if (j) { online = true; const t = extractTotal(j); if (t != null) videos = t; }
+  const vidUrls = [
+    `${PROXY}/videos?page=1&pageSize=1`,
+    `${REMOTE}/api/videos?page=1&pageSize=1`,
+  ];
+  for (const u of vidUrls) {
+    const j = await getJson(u);
+    if (j?.success || j?.data) {
+      online = true;
+      if (source === 'demo') source = u.startsWith(PROXY) ? 'proxy' : 'direct';
+      videos = totalOf(j); // 0 is a VALID answer (no videos uploaded yet)
+      break;
+    }
   }
 
   const total = photos != null && videos != null ? photos + videos : (photos ?? videos);
-  return { photos, videos, total, apiOnline: online };
+  return { photos, videos, total, apiOnline: online, source };
 }
 
-export async function getRandomMemories(): Promise<MediaItem[]> {
-  const pick = (arr: any[], type: 'image' | 'video') => arr.map((i: any) => ({ ...i, mediaType: type }));
-  let images: any[] = [];
-  let videos: any[] = [];
-
-  const ij = await tryFetch(`${API_BASE}/api/images/random?limit=6`);
-  if (ij && Array.isArray(ij.data)) images = pick(ij.data, 'image');
-  else {
-    const ij2 = await tryFetch(`${API_BASE}/api/images?page=1&pageSize=6`);
-    if (ij2 && Array.isArray(ij2.data)) images = pick(ij2.data, 'image');
+/* ---------- MEDIA LISTS ---------- */
+export async function fetchImages(limit = 6): Promise<{ items: MediaItem[]; source: string }> {
+  const attempts = [
+    `${PROXY}/images/random?limit=${limit}`,
+    `${REMOTE}/api/images/random?limit=${limit}`,
+    `${PROXY}/images?page=1&pageSize=${limit}`,
+    `${REMOTE}/api/images?page=1&pageSize=${limit}`,
+  ];
+  for (const u of attempts) {
+    const j = await getJson(u);
+    if (j && Array.isArray(j.data) && j.data.length) {
+      return { items: j.data.map((d: any) => normalize(d, 'image')), source: u.startsWith(PROXY) ? 'proxy' : 'direct' };
+    }
   }
+  return { items: DEMO, source: 'demo' };
+}
 
-  const vj = await tryFetch(`${API_BASE}/api/videos/random?limit=3`);
-  if (vj && Array.isArray(vj.data)) videos = pick(vj.data, 'video');
-  else {
-    const vj2 = await tryFetch(`${API_BASE}/api/videos?page=1&pageSize=3`);
-    if (vj2 && Array.isArray(vj2.data)) videos = pick(vj2.data, 'video');
+export async function fetchVideos(limit = 3): Promise<{ items: MediaItem[]; source: string }> {
+  const attempts = [
+    `${PROXY}/videos/random?limit=${limit}`,
+    `${REMOTE}/api/videos/random?limit=${limit}`,
+    `${PROXY}/videos?page=1&pageSize=${limit}`,
+    `${REMOTE}/api/videos?page=1&pageSize=${limit}`,
+  ];
+  for (const u of attempts) {
+    const j = await getJson(u);
+    if (j && Array.isArray(j.data) && j.data.length) {
+      return { items: j.data.map((d: any) => normalize(d, 'video')), source: u.startsWith(PROXY) ? 'proxy' : 'direct' };
+    }
   }
+  return { items: [], source: 'none' }; // zero videos is normal
+}
 
-  return [...images, ...videos].sort(() => Math.random() - 0.5);
+export async function getRandomMemories(): Promise<{ items: MediaItem[]; source: string }> {
+  const [img, vid] = await Promise.all([fetchImages(6), fetchVideos(3)]);
+  return { items: [...img.items, ...vid.items].sort(() => Math.random() - 0.5), source: img.source };
+}
+
+/* ---------- SINGLE IMAGE CACHE (for map popups) ---------- */
+let cache: MediaItem[] = [];
+export function prewarmArchive() { refill(); }
+async function refill() {
+  const { items } = await fetchImages(4);
+  cache.push(...items.filter((i) => i.url && i.url.startsWith('http')));
+}
+export async function getArchiveImage(): Promise<MediaItem | null> {
+  if (!cache.length) await refill();
+  if (!cache.length) await refill();
+  return cache.shift() || null;
 }
