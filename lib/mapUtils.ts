@@ -96,8 +96,8 @@ async function refillCache() {
   } catch {}
 }
 async function getArchiveImage(): Promise<any | null> {
-  if (!archiveCache.length) await refillCache();
-  if (!archiveCache.length) await refillCache();
+  if (!archiveCache.length) await prewarmArchive();
+  if (!archiveCache.length) await prewarmArchive();
   return archiveCache.shift() || null;
 }
 const safe = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
