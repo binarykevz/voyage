@@ -1,3 +1,4 @@
+import AncientLoader from '../components/AncientLoader';
 import TreasureFX from '../components/TreasureFX';
 import Header from '../components/Header';
 import MapSection from '../components/MapSection';
@@ -20,9 +21,9 @@ export default async function Home() {
   const stats = await getStats();
   return (
     <main>
+      <AncientLoader />
       <TreasureFX />
       <Header />
-
       <MapSection />
 
       <section className="tm-container" style={{ padding: '3rem 1rem 0' }}>
