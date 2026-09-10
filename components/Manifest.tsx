@@ -9,8 +9,7 @@ export default function Manifest() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const s = await getStatsResilient();
-    setStats(s);
+    setStats(await getStatsResilient());
     setLoading(false);
   }, []);
 
@@ -27,11 +26,11 @@ export default function Manifest() {
       <div className="tm-grid tm-grid-4" style={{ marginTop: '2rem' }}>
         <ManiCard label="Total Treasures" value={loading ? '…' : val(stats?.total)} sub="Artifacts recovered." delay={0} />
         <ManiCard label="Photographs" value={loading ? '…' : val(stats?.photos)} sub="Pressed moments." delay={0.1} />
-        <ManiCard label="Moving Pictures" value={loading ? '…' : val(stats?.videos)} sub="Living memories." delay={0.2} />
+        <ManiCard label="Moving Pictures" value={loading ? '…' : val(stats?.videos)} sub="None uploaded yet is normal." delay={0.2} />
         <ManiCard
           label="Archive"
           value={loading ? 'Scrying…' : stats?.apiOnline ? 'Online' : 'Offline'}
-          sub="Connection status."
+          sub={stats?.source === 'demo' ? 'Demo relics (archive unreachable)' : `Route: ${stats?.source ?? '—'}`}
           delay={0.3}
           tone={stats?.apiOnline}
         />
