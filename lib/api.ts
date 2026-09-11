@@ -88,6 +88,21 @@ export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
   return items ?? [];
 }
 
+/* Fetches all countries that have at least one media item */
+export async function fetchCountriesWithMedia(): Promise<Set<string>> {
+  const { items, error } = await fetchMedia();
+  if (!items || error) return new Set();
+  
+  // Extract unique countries from the media items
+  const countries = new Set<string>();
+  items.forEach((item) => {
+    if (item.country && item.country.trim()) {
+      countries.add(item.country.trim());
+    }
+  });
+  return countries;
+}
+
 export async function getStatsResilient(): Promise<Stats> {
   const { items, error, source } = await fetchMedia();
   if (items) {
