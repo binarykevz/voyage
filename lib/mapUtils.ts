@@ -94,19 +94,57 @@ function autoClose(layer: any, ms: number) {
   setTimeout(() => { try { if (layer.getPopup() === p && layer.isPopupOpen && layer.isPopupOpen()) layer.closePopup(); } catch {} }, ms);
 }
 async function openArchivePopup(lyr: any, name: string) {
-  // ... (loading state html) ...
-  
-  // 🔥 THIS IS THE MAGIC LINE: It passes the clicked country name to the API
-  const item = await getCountryArchiveImage(name); 
-  
-  const img = item?.url 
-    ? `<img class="popup-img" src="${item.url}" alt="${safe(item.title || name)}" onerror="this.outerHTML='<div class=&quot;popup-img-fallback&quot;>🗺</div>'" />` 
-    : `<div class="popup-img-fallback">🗺</div>`;
-    
-  const desc = item?.description || item?.title || (item?.country ? `A relic recovered from ${item.country}.` : `The archives are silent of ${name}.`);
-  
-  lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${img}<p class="tm-popup-desc">"${safe(desc)}"</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
-  autoClose(lyr, 5000);
+  // Loading state
+  lyr.bindPopup(
+    `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🕰</div><p class="tm-popup-desc">Consulting the archives…</p></div>`,
+    { maxWidth: 280, className: 'tm-popup-wrap' }
+  ).openPopup();
+
+  const item = await getCountryArchiveImage(name);
+
+  // No relic found for this country
+  if (!item) {
+    lyr.bindPopup(
+      `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🗺</div><p class="tm-popup-desc">The archives are silent of this land.</p></div>`,
+      { maxWidth: 280, className: 'tm-popup-wrap' }
+    ).openPopup();
+    autoClose(lyr, POPUP_COUNTRY_MS);
+    return;
+  }
+
+  // Candidate URLs for self-healing media
+  const cands = (item as any).urlCandidates?.length ? (item as any).urlCandidates : [item.url];
+  const w = globalThis as any;
+  w.__archiveCands = w.__archiveCands || [];
+  const cid = w.__archiveCands.push(cands) - 1;
+
+  const onErr =
+    `var el=this;var cs=(window.__archiveCands||[])[el.getAttribute('data-cid')];` +
+    `var i=(parseInt(el.getAttribute('data-i')||'0',10))+1;` +
+    `if(cs&&cs[i]){el.setAttribute('data-i',String(i));el.src=cs[i];}` +
+    `else{el.outerHTML='<div class=&quot;popup-img-fallback&quot;>🗺</div>';}`;
+
+  const mediaHtml = item.mediaType === 'video'
+    ? `<video class="popup-img" src="${cands[0]}" data-cid="${cid}" controls playsinline onerror="${onErr}"></video>`
+    : `<img class="popup-img" src="${cands[0]}" data-cid="${cid}" alt="${safe(item.title || name)}" onerror="${onErr}" />`;
+
+  // 📜 Title, description and 🕰 date from the API response
+  const title = item?.title || 'Untitled relic';
+  const desc = item?.description || 'No description recorded in the archives.';
+  const date = formatArchiveDate(item?.createdAt);
+
+  const metaHtml = `
+    <div class="tm-popup-itemtitle">📜 ${safe(title)}</div>
+    <p class="tm-popup-desc">&ldquo;${safe(desc)}&rdquo;</p>
+    <div class="tm-popup-date">🕰 Logged: ${safe(date)}</div>
+  `;
+
+  lyr.bindPopup(
+    `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${mediaHtml}${metaHtml}</div>`,
+    { maxWidth: 280, className: 'tm-popup-wrap' }
+  ).openPopup();
+
+  autoClose(lyr, POPUP_COUNTRY_MS); // ⏳ 10 seconds
 }
 
 
@@ -194,6 +232,17 @@ function featureIcon(type: string, label?: string) {
   const ocean = type === 'serpent' || type === 'whale' || type === 'wave';
   return `<div class="lm lm-${type}">${ICONS[type]}${label ? `<span class="lm-label ${ocean ? 'ocean' : ''}">${label}</span>` : ''}</div>`;
 }
+/* Popup lifetimes (ms) */
+const POPUP_COUNTRY_MS = 10000; // 10 seconds
+const POPUP_LANDMARK_MS = 10000; // 10 seconds
+
+function formatArchiveDate(value?: string): string {
+  if (!value) return 'Date unrecorded';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 
 /* ============ MAP INIT ============ */
 export async function initMap(options: { container: HTMLElement; onCountryClick: (name: string, coords: [number, number]) => void }) {
@@ -230,7 +279,7 @@ export async function initMap(options: { container: HTMLElement; onCountryClick:
         if (el) { el.classList.remove('lm-boom'); void el.offsetWidth; el.classList.add('lm-boom'); setTimeout(() => el.classList.remove('lm-boom'), 1300); }
         spawnRipple(map, f.coords, 'gold');
         marker.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">✦ ${safe(f.label || 'Terra Incognita')}</div><p class="tm-popup-desc">"${safe(f.desc || 'An unmarked wonder of the old world.')}"</p></div>`, { maxWidth: 240, className: 'tm-popup-wrap', offset: [0, -8] }).openPopup();
-        autoClose(marker, 4000);
+        autoClose(marker, POPUP_LANDMARK_MS); // ⏳ 10 seconds
       });
     }
   });
