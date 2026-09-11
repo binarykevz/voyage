@@ -1,6 +1,6 @@
 const PROXY = '/api/archive';
 const DIRECT_API_BASE = 'https://media-api.markmykevin.workers.dev';
-const DIRECT_API_KEY = 'e6a4ccaf5983d19197c27bf4a3a5df1a'; // Fallback key (same as your original HTML app)
+const DIRECT_API_KEY = 'e6a4ccaf5983d19197c27bf4a3a5df1a';
 
 export interface MediaItem {
   id?: string;
@@ -14,12 +14,15 @@ export interface MediaItem {
   mediaType: 'image' | 'video';
 }
 
+// Define the exact allowed strings for source
+type SourceType = 'proxy' | 'direct' | 'none';
+
 export interface Stats {
   photos: number | null;
   videos: number | null;
   total: number | null;
   apiOnline: boolean;
-  source: 'proxy' | 'direct' | 'none';
+  source: SourceType;
   error?: string;
 }
 
@@ -32,14 +35,16 @@ function normalize(item: any): MediaItem {
 
 const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-/* Try proxy first, then fall back to direct API call */
-async function getJson(url: string, useDirectKey = false): Promise<{ data: any; error?: string; source: string } | null> {
+// Use the SourceType here so TypeScript knows exactly what it is
+async function getJson(url: string, useDirectKey = false): Promise<{ data: any; error?: string; source: SourceType } | null> {
   // Attempt 1: Proxy (same-origin, no CORS issues)
   if (!useDirectKey) {
     try {
       const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
-      const j = await r.json();
-      if (r.ok) return { data: j, error: undefined, source: 'proxy' };
+      if (r.ok) {
+        const j = await r.json();
+        return { data: j, error: undefined, source: 'proxy' };
+      }
     } catch (e: any) {
       // Proxy failed, fall through to direct
     }
@@ -63,7 +68,7 @@ async function getJson(url: string, useDirectKey = false): Promise<{ data: any; 
   }
 }
 
-async function fetchMedia(query = '', useDirectKey = false): Promise<{ items: MediaItem[] | null; error?: string; source: string }> {
+async function fetchMedia(query = '', useDirectKey = false): Promise<{ items: MediaItem[] | null; error?: string; source: SourceType }> {
   const res = await getJson(`${PROXY}/media${query}`, useDirectKey);
   if (!res || !res.data) return { items: null, error: res?.error || 'Network error', source: 'none' };
   
