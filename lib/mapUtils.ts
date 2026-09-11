@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import type { Map as LeafletMap, Marker } from 'leaflet';
-import { getArchiveImage, prewarmArchive } from './api';
+import { getCountryArchiveImage, prewarmArchive } from './api';
 
 const API_BASE = 'https://media-api.markmykevin.workers.dev/';
 
@@ -96,7 +96,7 @@ function autoClose(layer: any, ms: number) {
 
 async function openArchivePopup(lyr: any, name: string) {
   lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🕰</div><p class="tm-popup-desc">Consulting the archives…</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
-  const item = await getArchiveImage();
+  const item = await getCountryArchiveImage(name);
   const img = item?.url ? `<img class="popup-img" src="${item.url}" alt="${safe(item.title || name)}" onerror="this.outerHTML='<div class=&quot;popup-img-fallback&quot;>🗺</div>'" />` : `<div class="popup-img-fallback">🗺</div>`;
   const desc = item?.description || item?.title || 'The archives are silent of this land.';
   lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${img}<p class="tm-popup-desc">"${safe(desc)}"</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
