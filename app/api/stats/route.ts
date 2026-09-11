@@ -16,10 +16,23 @@ export async function GET(
   const jsonHeaders = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
     'Cache-Control': 'no-store',
   };
+
+  // 🛑 Intercept diagnostic route so it doesn't proxy to the external API
+  if (path[0] === 'diagnostic') {
+    return new Response(
+      JSON.stringify({
+        hasBase: !!base,
+        hasKey: !!key,
+        baseLength: base?.length || 0,
+        keyLength: key?.length || 0,
+        basePreview: base ? `${base.slice(0, 15)}...` : null,
+        keyPreview: key ? `${key.slice(0, 4)}...` : null,
+      }),
+      { status: 200, headers: jsonHeaders }
+    );
+  }
 
   if (!base || !key) {
     return new Response(
@@ -37,27 +50,14 @@ export async function GET(
 
   try {
     const res = await fetch(target, {
-      headers: {
-        Accept: 'application/json',
-        'x-api-key': key,
-      },
+      headers: { Accept: 'application/json', 'x-api-key': key },
       cache: 'no-store',
     });
-    
     const body = await res.text();
-    
-    return new Response(body, { 
-      status: res.status, 
-      headers: jsonHeaders 
-    });
+    return new Response(body, { status: res.status, headers: jsonHeaders });
   } catch (e: any) {
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'FETCH_FAILED',
-        message: String(e?.message || e),
-        target 
-      }),
+      JSON.stringify({ success: false, error: 'FETCH_FAILED', message: String(e?.message || e) }),
       { status: 502, headers: jsonHeaders }
     );
   }
