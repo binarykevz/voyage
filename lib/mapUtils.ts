@@ -101,15 +101,14 @@ function autoClose(layer: any, ms: number) {
   const p = layer.getPopup();
   setTimeout(() => { try { if (layer.getPopup() === p && layer.isPopupOpen && layer.isPopupOpen()) layer.closePopup(); } catch {} }, ms);
 }
+
 async function openArchivePopup(lyr: any, name: string) {
   const item = await getCountryArchiveImage(name);
-  
-  // If no media exists for this country, don't show any popup at all
-  if (!item) {
-    return; // Exit immediately - no popup
-  }
 
-  // Candidate URLs for self-healing media
+  // ❌ No data for this country → NO popup at all
+  if (!item) return;
+
+  // Self-heeling media URL candidates
   const cands = (item as any).urlCandidates?.length ? (item as any).urlCandidates : [item.url];
   const w = globalThis as any;
   w.__archiveCands = w.__archiveCands || [];
@@ -125,16 +124,15 @@ async function openArchivePopup(lyr: any, name: string) {
     ? `<video class="popup-img" src="${cands[0]}" data-cid="${cid}" controls playsinline onerror="${onErr}"></video>`
     : `<img class="popup-img" src="${cands[0]}" data-cid="${cid}" alt="${safe(item.title || name)}" onerror="${onErr}" />`;
 
-  // Extract title, description, and date from the API response
-  const title = item?.title || 'Untitled relic';
-  const desc = item?.description || 'No description recorded in the archives.';
-  const date = formatArchiveDate(item?.createdAt);
+  // ✅ Strictly from API data — each line renders ONLY if the API provided it, else empty
+  const title = (item.title || '').trim();
+  const desc = (item.description || '').trim();
+  const date = item.createdAt ? formatArchiveDate(item.createdAt) : '';
 
-  const metaHtml = `
-    <div class="tm-popup-itemtitle">📜 ${safe(title)}</div>
-    <p class="tm-popup-desc">&ldquo;${safe(desc)}&rdquo;</p>
-    <div class="tm-popup-date">🕰 Logged: ${safe(date)}</div>
-  `;
+  const metaHtml =
+    (title ? `<div class="tm-popup-itemtitle">📜 ${safe(title)}</div>` : '') +
+    (desc ? `<p class="tm-popup-desc">&ldquo;${safe(desc)}&rdquo;</p>` : '') +
+    (date ? `<div class="tm-popup-date">🕰 Logged: ${safe(date)}</div>` : '');
 
   lyr.bindPopup(
     `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${mediaHtml}${metaHtml}</div>`,
@@ -143,6 +141,7 @@ async function openArchivePopup(lyr: any, name: string) {
 
   autoClose(lyr, 10000); // 10 seconds
 }
+
 
 /* ============ CLICK RIPPLE ============ */
 function spawnRipple(map: LeafletMap, latlng: [number, number], kind: 'gold' | 'sea') {
