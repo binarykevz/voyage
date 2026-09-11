@@ -1,4 +1,4 @@
-const PROXY = '/api/archive'; // Same-origin proxy route
+const PROXY = '/api/archive';
 
 export interface MediaItem {
   id?: string;
@@ -17,7 +17,8 @@ export interface Stats {
   videos: number | null;
   total: number | null;
   apiOnline: boolean;
-  source: 'proxy' | 'demo';
+  source: 'proxy' | 'none';
+  error?: string;
 }
 
 function normalize(item: any): MediaItem {
@@ -29,70 +30,58 @@ function normalize(item: any): MediaItem {
 
 const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-async function getJson(url: string): Promise<any | null> {
+async function getJson(url: string): Promise<{ data: any; error?: string } | null> {
   try {
     const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
+    const j = await r.json();
+    if (!r.ok) return { data: null, error: j?.error || `HTTP ${r.status}` };
+    return { data: j, error: undefined };
+  } catch (e: any) {
     return null;
   }
 }
 
-const DEMO: MediaItem[] = [
-  { url: 'https://picsum.photos/seed/relic1/640/480', title: 'Demo Relic I', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
-  { url: 'https://picsum.photos/seed/relic2/640/480', title: 'Demo Relic II', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
-  { url: 'https://picsum.photos/seed/relic3/640/480', title: 'Demo Relic III', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
-];
-
-/* Core fetcher handling the dynamic ?country= query */
-async function fetchMedia(query = ''): Promise<MediaItem[] | null> {
-  const j = await getJson(`${PROXY}/media${query}`);
+async function fetchMedia(query = ''): Promise<{ items: MediaItem[] | null; error?: string }> {
+  const res = await getJson(`${PROXY}/media${query}`);
+  if (!res || !res.data) return { items: null, error: res?.error || 'Network error' };
   
-  // The API returns { data: [...] } based on your snippet
-  if (j && Array.isArray(j.data)) return j.data.map(normalize);
-  if (Array.isArray(j)) return j.map(normalize);
-  return null;
+  const arr = Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+  return { items: arr.map(normalize), error: undefined };
 }
 
-/* Fetches media specifically for a clicked country */
 export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
   const encoded = encodeURIComponent(country);
-  const list = await fetchMedia(`?country=${encoded}`);
-  return list ?? [];
+  const { items } = await fetchMedia(`?country=${encoded}`);
+  return items ?? [];
 }
 
-/* Stats for the manifest */
 export async function getStatsResilient(): Promise<Stats> {
-  const all = await fetchMedia(); // Fetches everything without country filter
-  if (all) {
-    const photos = all.filter((i) => i.mediaType === 'image').length;
-    const videos = all.filter((i) => i.mediaType === 'video').length;
-    return { photos, videos, total: all.length, apiOnline: true, source: 'proxy' };
+  const { items, error } = await fetchMedia();
+  if (items) {
+    const photos = items.filter((i) => i.mediaType === 'image').length;
+    const videos = items.filter((i) => i.mediaType === 'video').length;
+    return { photos, videos, total: items.length, apiOnline: true, source: 'proxy' };
   }
-  return { photos: null, videos: null, total: null, apiOnline: false, source: 'demo' };
+  return { photos: null, videos: null, total: null, apiOnline: false, source: 'none', error };
 }
 
-/* General random memories for the journal grid */
 export async function getRandomMemories(): Promise<{ items: MediaItem[]; source: string }> {
-  const all = await fetchMedia();
-  if (all && all.length) {
-    const imgs = shuffle(all.filter((i) => i.mediaType === 'image' && i.url)).slice(0, 6);
-    const vids = shuffle(all.filter((i) => i.mediaType === 'video' && i.url)).slice(0, 3);
+  const { items } = await fetchMedia();
+  if (items && items.length) {
+    const imgs = shuffle(items.filter((i) => i.mediaType === 'image' && i.url)).slice(0, 6);
+    const vids = shuffle(items.filter((i) => i.mediaType === 'video' && i.url)).slice(0, 3);
     return { items: shuffle([...imgs, ...vids]), source: 'proxy' };
   }
-  return { items: DEMO, source: 'demo' };
+  return { items: [], source: 'none' };
 }
 
-/* Country-specific image for map popups */
 export async function getCountryArchiveImage(country: string): Promise<MediaItem | null> {
   const list = await fetchCountryMedia(country);
   const pick = list.find((i) => i.mediaType === 'image' && i.url) || list.find((i) => i.url);
   if (pick) return pick;
   
-  // Fallback: if that specific country has no media, grab a random one from the general pool
-  const all = await fetchMedia();
-  if (all && all.length) return shuffle(all)[0];
+  const { items } = await fetchMedia();
+  if (items && items.length) return shuffle(items)[0];
   return null;
 }
 
