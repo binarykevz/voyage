@@ -1,38 +1,52 @@
 export const runtime = 'edge';
 
-const API_BASE = 'https://media-api.markmykevin.workers.dev';
-// Server-only secret. Optionally override with env var ARCHIVE_API_KEY in your hosting dashboard.
-const API_KEY = process.env.ARCHIVE_API_KEY || 'e6a4ccaf5983d19197c27bf4a3a5df1a';
+/* Secrets come ONLY from environment variables (server-side). */
+function archiveConfig() {
+  const base = (process.env.ARCHIVE_API_BASE || '').replace(/\/+$/, '');
+  const key = process.env.ARCHIVE_API_KEY || '';
+  return { base, key };
+}
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params; // Next 15: params is a Promise
+  const { base, key } = archiveConfig();
+
+  const jsonHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-store',
+  };
+
+  if (!base || !key) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Server misconfiguration: set ARCHIVE_API_BASE and ARCHIVE_API_KEY environment variables in your hosting dashboard.',
+      }),
+      { status: 500, headers: jsonHeaders }
+    );
+  }
+
   const url = new URL(req.url);
-  const target = `${API_BASE}/api/${path.join('/')}${url.search}`;
+  const target = `${base}/api/${path.join('/')}${url.search}`;
 
   try {
     const res = await fetch(target, {
       headers: {
         Accept: 'application/json',
-        'x-api-key': API_KEY, // 🔑 injected here, never in the browser
+        'x-api-key': key, // 🔑 injected server-side only
       },
       cache: 'no-store',
     });
     const body = await res.text();
-    return new Response(body, {
-      status: res.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-store',
-      },
-    });
+    return new Response(body, { status: res.status, headers: jsonHeaders });
   } catch (e: any) {
     return new Response(
       JSON.stringify({ success: false, error: String(e?.message || e) }),
-      { status: 502, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      { status: 502, headers: jsonHeaders }
     );
   }
 }
