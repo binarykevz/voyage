@@ -705,3 +705,16 @@ body { font-family: 'Almendra', 'IM Fell English', Georgia, serif; }
 
 /* Disable the old 5s fade so popups stay visible for the full 10s */
 .tm-popup-wrap .leaflet-popup-content-wrapper { animation: none !important; }
+
+
+/* ============ X MARKER FOR COUNTRIES WITH MEDIA ============ */
+.x-marker {
+  animation: xPulse 2s ease-in-out infinite;
+}
+@keyframes xPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+.x-marker .oi {
+  filter: drop-shadow(0 2px 4px rgba(138, 59, 30, 0.6));
+}
