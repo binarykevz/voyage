@@ -15,9 +15,9 @@ export default function Manifest() {
     setLoading(false);
   }, []);
 
-  const checkDiagnostic = async () => {
+    const checkDiagnostic = async () => {
     try {
-      const r = await fetch('/api/archive/diagnostic');
+      const r = await fetch('/api/archive/media?diagnostic=true'); // ✅ NEW
       setDiagnostic(await r.json());
     } catch (e: any) {
       setDiagnostic({ error: String(e) });
