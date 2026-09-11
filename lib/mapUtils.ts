@@ -329,7 +329,6 @@ export async function initMap(options: { container: HTMLElement; onCountryClick:
       }
     });
   } catch (e) { console.error(e); }
-  } catch (e) { console.error(e); }
 
   return { map, countryList, shipMarker };
 }
