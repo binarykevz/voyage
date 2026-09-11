@@ -25,16 +25,20 @@ export interface Stats {
   error?: string;
 }
 
-// 🕵️ Aggressively checks all common API field names for the image URL
+// 🕵️ Handles nested media.url and relative paths
 function normalize(item: any): MediaItem {
   const t = item?.mediaType || item?.type;
-  const mime = String(item?.mimeType || item?.contentType || '');
+  const mime = String(item?.media?.mimeType || item?.mimeType || item?.contentType || '');
   const isVideo = t === 'video' || mime.startsWith('video');
   
-  // Check every possible field name the API might be using for the URL
-  const url = item?.url || item?.imageUrl || item?.src || item?.image || 
-              item?.fileUrl || item?.mediaUrl || item?.thumbnail || 
-              item?.publicUrl || item?.file || item?.link || '';
+  // 1. Check top-level fields, then fall back to the nested media.url
+  let url = item?.url || item?.imageUrl || item?.src || item?.media?.url || '';
+  
+  // 2. If the URL is relative (doesn't start with http), prepend the API base
+  if (url && !url.startsWith('http')) {
+    if (url.startsWith('/')) url = url.slice(1); // remove leading slash
+    url = `${DIRECT_API_BASE}/${url}`;
+  }
   
   return { 
     ...item, 
@@ -114,9 +118,8 @@ export async function getCountryArchiveImage(country: string): Promise<MediaItem
   return null;
 }
 
-export function prewarmArchive() { /* Kept for mapUtils compatibility */ }
+export function prewarmArchive() {}
 
-// 🐛 Debug function to see the EXACT raw API response
 export async function debugRawFetch(query: string): Promise<any> {
   const url = `${DIRECT_API_BASE}/api/media${query}`;
   try {
