@@ -1,4 +1,6 @@
 const PROXY = '/api/archive';
+const DIRECT_API_BASE = 'https://media-api.markmykevin.workers.dev';
+const DIRECT_API_KEY = 'e6a4ccaf5983d19197c27bf4a3a5df1a'; // Fallback key (same as your original HTML app)
 
 export interface MediaItem {
   id?: string;
@@ -17,7 +19,7 @@ export interface Stats {
   videos: number | null;
   total: number | null;
   apiOnline: boolean;
-  source: 'proxy' | 'none';
+  source: 'proxy' | 'direct' | 'none';
   error?: string;
 }
 
@@ -30,23 +32,43 @@ function normalize(item: any): MediaItem {
 
 const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-async function getJson(url: string): Promise<{ data: any; error?: string } | null> {
+/* Try proxy first, then fall back to direct API call */
+async function getJson(url: string, useDirectKey = false): Promise<{ data: any; error?: string; source: string } | null> {
+  // Attempt 1: Proxy (same-origin, no CORS issues)
+  if (!useDirectKey) {
+    try {
+      const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      const j = await r.json();
+      if (r.ok) return { data: j, error: undefined, source: 'proxy' };
+    } catch (e: any) {
+      // Proxy failed, fall through to direct
+    }
+  }
+
+  // Attempt 2: Direct API call with hardcoded key (bypasses proxy)
   try {
-    const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    const directUrl = url.replace(PROXY, `${DIRECT_API_BASE}/api`);
+    const r = await fetch(directUrl, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        'x-api-key': DIRECT_API_KEY,
+      },
+    });
     const j = await r.json();
-    if (!r.ok) return { data: null, error: j?.error || `HTTP ${r.status}` };
-    return { data: j, error: undefined };
+    if (r.ok) return { data: j, error: undefined, source: 'direct' };
+    return { data: null, error: j?.error || `HTTP ${r.status}`, source: 'direct' };
   } catch (e: any) {
     return null;
   }
 }
 
-async function fetchMedia(query = ''): Promise<{ items: MediaItem[] | null; error?: string }> {
-  const res = await getJson(`${PROXY}/media${query}`);
-  if (!res || !res.data) return { items: null, error: res?.error || 'Network error' };
+async function fetchMedia(query = '', useDirectKey = false): Promise<{ items: MediaItem[] | null; error?: string; source: string }> {
+  const res = await getJson(`${PROXY}/media${query}`, useDirectKey);
+  if (!res || !res.data) return { items: null, error: res?.error || 'Network error', source: 'none' };
   
   const arr = Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-  return { items: arr.map(normalize), error: undefined };
+  return { items: arr.map(normalize), error: undefined, source: res.source };
 }
 
 export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
@@ -56,21 +78,21 @@ export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
 }
 
 export async function getStatsResilient(): Promise<Stats> {
-  const { items, error } = await fetchMedia();
+  const { items, error, source } = await fetchMedia();
   if (items) {
     const photos = items.filter((i) => i.mediaType === 'image').length;
     const videos = items.filter((i) => i.mediaType === 'video').length;
-    return { photos, videos, total: items.length, apiOnline: true, source: 'proxy' };
+    return { photos, videos, total: items.length, apiOnline: true, source };
   }
   return { photos: null, videos: null, total: null, apiOnline: false, source: 'none', error };
 }
 
 export async function getRandomMemories(): Promise<{ items: MediaItem[]; source: string }> {
-  const { items } = await fetchMedia();
+  const { items, source } = await fetchMedia();
   if (items && items.length) {
     const imgs = shuffle(items.filter((i) => i.mediaType === 'image' && i.url)).slice(0, 6);
     const vids = shuffle(items.filter((i) => i.mediaType === 'video' && i.url)).slice(0, 3);
-    return { items: shuffle([...imgs, ...vids]), source: 'proxy' };
+    return { items: shuffle([...imgs, ...vids]), source };
   }
   return { items: [], source: 'none' };
 }
