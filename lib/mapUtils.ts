@@ -7,6 +7,14 @@ const API_BASE = 'https://media-api.markmykevin.workers.dev/';
 export interface CountryItem { name: string; onClick: () => void; }
 interface Feature { type: string; coords: [number, number]; label?: string; desc?: string; }
 
+const X_MARKER_SVG = `<svg class="oi" viewBox="0 0 40 40" width="32" height="32">
+  <g fill="none" stroke="#8a3b1e" stroke-width="3" stroke-linecap="round">
+    <path d="M12 12 L28 28"/>
+    <path d="M28 12 L12 28"/>
+    <circle cx="20" cy="20" r="16" stroke-width="2" opacity="0.6"/>
+  </g>
+</svg>`;
+
 /* ============ ORNATE COMPASS ROSE (SVG) ============ */
 const ROSE_SVG = `<svg class="oi" viewBox="0 0 100 100" width="86" height="86"><g stroke="#4a3018" fill="none" stroke-width="1"><circle cx="50" cy="50" r="46" opacity=".85"/><circle cx="50" cy="50" r="34" opacity=".6"/><circle cx="50" cy="50" r="6"/><g fill="#4a3018" fill-opacity=".85" stroke="none"><path d="M50 4 L55 45 L50 50 L45 45 Z"/><path d="M50 96 L55 55 L50 50 L45 55 Z" fill-opacity=".55"/><path d="M4 50 L45 45 L50 50 L45 55 Z" fill-opacity=".55"/><path d="M96 50 L55 45 L50 50 L55 55 Z" fill-opacity=".55"/><path d="M18 18 L46 46 L50 50 L44 44 Z" fill-opacity=".4"/><path d="M82 18 L54 46 L50 50 L56 44 Z" fill-opacity=".4"/><path d="M18 82 L46 54 L50 50 L44 56 Z" fill-opacity=".4"/><path d="M82 82 L54 54 L50 50 L56 56 Z" fill-opacity=".4"/></g><path d="M50 10 V18 M50 82 V90 M10 50 H18 M82 50 H90" stroke-width="1.2"/><text x="50" y="13" text-anchor="middle" font-size="10" fill="#4a3018" font-family="Cinzel,serif" stroke="none">N</text></g></svg>`;
 
@@ -94,22 +102,11 @@ function autoClose(layer: any, ms: number) {
   setTimeout(() => { try { if (layer.getPopup() === p && layer.isPopupOpen && layer.isPopupOpen()) layer.closePopup(); } catch {} }, ms);
 }
 async function openArchivePopup(lyr: any, name: string) {
-  // Loading state
-  lyr.bindPopup(
-    `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🕰</div><p class="tm-popup-desc">Consulting the archives…</p></div>`,
-    { maxWidth: 280, className: 'tm-popup-wrap' }
-  ).openPopup();
-
   const item = await getCountryArchiveImage(name);
-
-  // No relic found for this country
+  
+  // If no media exists for this country, don't show any popup at all
   if (!item) {
-    lyr.bindPopup(
-      `<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🗺</div><p class="tm-popup-desc">The archives are silent of this land.</p></div>`,
-      { maxWidth: 280, className: 'tm-popup-wrap' }
-    ).openPopup();
-    autoClose(lyr, POPUP_COUNTRY_MS);
-    return;
+    return; // Exit immediately - no popup
   }
 
   // Candidate URLs for self-healing media
@@ -128,7 +125,7 @@ async function openArchivePopup(lyr: any, name: string) {
     ? `<video class="popup-img" src="${cands[0]}" data-cid="${cid}" controls playsinline onerror="${onErr}"></video>`
     : `<img class="popup-img" src="${cands[0]}" data-cid="${cid}" alt="${safe(item.title || name)}" onerror="${onErr}" />`;
 
-  // 📜 Title, description and 🕰 date from the API response
+  // Extract title, description, and date from the API response
   const title = item?.title || 'Untitled relic';
   const desc = item?.description || 'No description recorded in the archives.';
   const date = formatArchiveDate(item?.createdAt);
@@ -144,9 +141,8 @@ async function openArchivePopup(lyr: any, name: string) {
     { maxWidth: 280, className: 'tm-popup-wrap' }
   ).openPopup();
 
-  autoClose(lyr, POPUP_COUNTRY_MS); // ⏳ 10 seconds
+  autoClose(lyr, 10000); // 10 seconds
 }
-
 
 /* ============ CLICK RIPPLE ============ */
 function spawnRipple(map: LeafletMap, latlng: [number, number], kind: 'gold' | 'sea') {
@@ -312,7 +308,27 @@ export async function initMap(options: { container: HTMLElement; onCountryClick:
         countryList.push({ name, onClick: () => { const c = lyr.getBounds().getCenter(); onCountryClick(name, [c.lat, c.lng]); map.fitBounds(lyr.getBounds()); } });
       },
     }).addTo(map);
-    layer.bringToFront();
+        layer.bringToFront();
+    
+    // Fetch countries with media and mark them with X
+    const countriesWithMedia = await import('./api').then(m => m.fetchCountriesWithMedia());
+    layer.eachLayer((countryLayer: any) => {
+      const name = countryLayer.feature?.properties?.ADMIN || countryLayer.feature?.properties?.NAME;
+      if (name && countriesWithMedia.has(name)) {
+        const center = countryLayer.getBounds().getCenter();
+        L.marker([center.lat, center.lng], {
+          icon: L.divIcon({
+            className: 'lm-wrap',
+            html: `<div class="x-marker">${X_MARKER_SVG}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          }),
+          interactive: false,
+          keyboard: false,
+        }).addTo(map);
+      }
+    });
+  } catch (e) { console.error(e); }
   } catch (e) { console.error(e); }
 
   return { map, countryList, shipMarker };
