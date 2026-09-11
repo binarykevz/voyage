@@ -14,7 +14,6 @@ export interface MediaItem {
   mediaType: 'image' | 'video';
 }
 
-// Define the exact allowed strings for source
 type SourceType = 'proxy' | 'direct' | 'none';
 
 export interface Stats {
@@ -26,18 +25,27 @@ export interface Stats {
   error?: string;
 }
 
+// 🕵️ Aggressively checks all common API field names for the image URL
 function normalize(item: any): MediaItem {
   const t = item?.mediaType || item?.type;
-  const mime = String(item?.mimeType || '');
+  const mime = String(item?.mimeType || item?.contentType || '');
   const isVideo = t === 'video' || mime.startsWith('video');
-  return { ...item, mediaType: isVideo ? 'video' : 'image' };
+  
+  // Check every possible field name the API might be using for the URL
+  const url = item?.url || item?.imageUrl || item?.src || item?.image || 
+              item?.fileUrl || item?.mediaUrl || item?.thumbnail || 
+              item?.publicUrl || item?.file || item?.link || '';
+  
+  return { 
+    ...item, 
+    url,
+    mediaType: isVideo ? 'video' : 'image' 
+  };
 }
 
 const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-// Use the SourceType here so TypeScript knows exactly what it is
 async function getJson(url: string, useDirectKey = false): Promise<{ data: any; error?: string; source: SourceType } | null> {
-  // Attempt 1: Proxy (same-origin, no CORS issues)
   if (!useDirectKey) {
     try {
       const r = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
@@ -45,20 +53,14 @@ async function getJson(url: string, useDirectKey = false): Promise<{ data: any; 
         const j = await r.json();
         return { data: j, error: undefined, source: 'proxy' };
       }
-    } catch (e: any) {
-      // Proxy failed, fall through to direct
-    }
+    } catch (e: any) {}
   }
 
-  // Attempt 2: Direct API call with hardcoded key (bypasses proxy)
   try {
     const directUrl = url.replace(PROXY, `${DIRECT_API_BASE}/api`);
     const r = await fetch(directUrl, {
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-        'x-api-key': DIRECT_API_KEY,
-      },
+      headers: { Accept: 'application/json', 'x-api-key': DIRECT_API_KEY },
     });
     const j = await r.json();
     if (r.ok) return { data: j, error: undefined, source: 'direct' };
@@ -113,3 +115,20 @@ export async function getCountryArchiveImage(country: string): Promise<MediaItem
 }
 
 export function prewarmArchive() { /* Kept for mapUtils compatibility */ }
+
+// 🐛 Debug function to see the EXACT raw API response
+export async function debugRawFetch(query: string): Promise<any> {
+  const url = `${DIRECT_API_BASE}/api/media${query}`;
+  try {
+    const r = await fetch(url, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'x-api-key': DIRECT_API_KEY },
+    });
+    const text = await r.text();
+    let json;
+    try { json = JSON.parse(text); } catch { json = { rawText: text }; }
+    return { status: r.status, body: json };
+  } catch (e: any) {
+    return { error: String(e) };
+  }
+}
