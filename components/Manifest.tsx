@@ -6,12 +6,23 @@ import { getStatsResilient, type Stats } from '../lib/api';
 export default function Manifest() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [diagnostic, setDiagnostic] = useState<any>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setStats(await getStatsResilient());
     setLoading(false);
   }, []);
+
+  const checkDiagnostic = async () => {
+    try {
+      const r = await fetch('/api/archive/diagnostic');
+      const j = await r.json();
+      setDiagnostic(j);
+    } catch (e: any) {
+      setDiagnostic({ error: String(e) });
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -36,9 +47,19 @@ export default function Manifest() {
         />
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '1.4rem' }}>
+      <div style={{ textAlign: 'center', marginTop: '1.4rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
         <button className="tm-btn-quill" onClick={load}>🪶 Re-consult the Archives</button>
+        <button className="tm-btn-quill" onClick={checkDiagnostic}>🔍 Check Env Vars</button>
       </div>
+
+      {diagnostic && (
+        <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(212,184,140,0.95)', border: '2px solid #6b4a22', borderRadius: '4px' }}>
+          <strong>Diagnostic:</strong>
+          <pre style={{ fontSize: '0.75rem', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>
+            {JSON.stringify(diagnostic, null, 2)}
+          </pre>
+        </div>
+      )}
     </section>
   );
 }
