@@ -1,8 +1,8 @@
-export const runtime = 'edge'; // ← runs on Cloudflare Workers
+export const runtime = 'edge';
 
-import { NextResponse } from 'next/server';
-
-const API_BASE = 'https://media-api.markmykevin.workers.dev/';
+const API_BASE = 'https://media-api.markmykevin.workers.dev';
+// Server-only secret. Optionally override with env var ARCHIVE_API_KEY in your hosting dashboard.
+const API_KEY = process.env.ARCHIVE_API_KEY || 'e6a4ccaf5983d19197c27bf4a3a5df1a';
 
 export async function GET(
   req: Request,
@@ -14,7 +14,10 @@ export async function GET(
 
   try {
     const res = await fetch(target, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'x-api-key': API_KEY, // 🔑 injected here, never in the browser
+      },
       cache: 'no-store',
     });
     const body = await res.text();
@@ -28,7 +31,7 @@ export async function GET(
     });
   } catch (e: any) {
     return new Response(
-      JSON.stringify({ success: false, error: String(e?.message || e), target }),
+      JSON.stringify({ success: false, error: String(e?.message || e) }),
       { status: 502, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
