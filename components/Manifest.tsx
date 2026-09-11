@@ -26,11 +26,11 @@ export default function Manifest() {
       <div className="tm-grid tm-grid-4" style={{ marginTop: '2rem' }}>
         <ManiCard label="Total Treasures" value={loading ? '…' : val(stats?.total)} sub="Artifacts recovered." delay={0} />
         <ManiCard label="Photographs" value={loading ? '…' : val(stats?.photos)} sub="Pressed moments." delay={0.1} />
-        <ManiCard label="Moving Pictures" value={loading ? '…' : val(stats?.videos)} sub="None uploaded yet is normal." delay={0.2} />
+        <ManiCard label="Moving Pictures" value={loading ? '…' : val(stats?.videos)} sub="Living memories." delay={0.2} />
         <ManiCard
           label="Archive"
           value={loading ? 'Scrying…' : stats?.apiOnline ? 'Online' : 'Offline'}
-          sub={stats?.source === 'demo' ? 'Demo relics (archive unreachable)' : `Route: ${stats?.source ?? '—'}`}
+          sub={stats?.apiOnline ? `Route: ${stats?.source}` : `Error: ${stats?.error || 'Unknown'}`}
           delay={0.3}
           tone={stats?.apiOnline}
         />
@@ -66,7 +66,7 @@ function ManiCard({ label, value, sub, delay, tone }: { label: string; value: st
             {value}
           </motion.div>
         </AnimatePresence>
-        <div className="tm-sub">{sub}</div>
+        <div className="tm-sub" style={{ fontSize: '0.75rem', color: tone === false ? '#8a3b1e' : undefined }}>{sub}</div>
       </div>
     </motion.div>
   );
