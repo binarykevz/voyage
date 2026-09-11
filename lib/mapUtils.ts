@@ -93,15 +93,22 @@ function autoClose(layer: any, ms: number) {
   const p = layer.getPopup();
   setTimeout(() => { try { if (layer.getPopup() === p && layer.isPopupOpen && layer.isPopupOpen()) layer.closePopup(); } catch {} }, ms);
 }
-
 async function openArchivePopup(lyr: any, name: string) {
-  lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div><div class="popup-img-fallback">🕰</div><p class="tm-popup-desc">Consulting the archives…</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
-  const item = await getCountryArchiveImage(name);
-  const img = item?.url ? `<img class="popup-img" src="${item.url}" alt="${safe(item.title || name)}" onerror="this.outerHTML='<div class=&quot;popup-img-fallback&quot;>🗺</div>'" />` : `<div class="popup-img-fallback">🗺</div>`;
-  const desc = item?.description || item?.title || 'The archives are silent of this land.';
+  // ... (loading state html) ...
+  
+  // 🔥 THIS IS THE MAGIC LINE: It passes the clicked country name to the API
+  const item = await getCountryArchiveImage(name); 
+  
+  const img = item?.url 
+    ? `<img class="popup-img" src="${item.url}" alt="${safe(item.title || name)}" onerror="this.outerHTML='<div class=&quot;popup-img-fallback&quot;>🗺</div>'" />` 
+    : `<div class="popup-img-fallback">🗺</div>`;
+    
+  const desc = item?.description || item?.title || (item?.country ? `A relic recovered from ${item.country}.` : `The archives are silent of ${name}.`);
+  
   lyr.bindPopup(`<div class="tm-popup"><div class="tm-popup-title">⚜ ${safe(name)}</div>${img}<p class="tm-popup-desc">"${safe(desc)}"</p></div>`, { maxWidth: 260, className: 'tm-popup-wrap' }).openPopup();
   autoClose(lyr, 5000);
 }
+
 
 /* ============ CLICK RIPPLE ============ */
 function spawnRipple(map: LeafletMap, latlng: [number, number], kind: 'gold' | 'sea') {
