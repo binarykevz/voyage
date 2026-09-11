@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  const { base, key } = getArchiveConfig();
+  const url = new URL(req.url);
 
   const jsonHeaders = {
     'Content-Type': 'application/json',
@@ -19,8 +19,9 @@ export async function GET(
     'Cache-Control': 'no-store',
   };
 
-  // 🛑 Intercept diagnostic route so it doesn't proxy to the external API
-  if (path[0] === 'diagnostic') {
+  // 🛑 Intercept diagnostic via QUERY PARAMETER (avoids 404 HTML pages)
+  if (url.searchParams.has('diagnostic')) {
+    const { base, key } = getArchiveConfig();
     return new Response(
       JSON.stringify({
         hasBase: !!base,
@@ -34,6 +35,8 @@ export async function GET(
     );
   }
 
+  const { base, key } = getArchiveConfig();
+
   if (!base || !key) {
     return new Response(
       JSON.stringify({
@@ -45,7 +48,6 @@ export async function GET(
     );
   }
 
-  const url = new URL(req.url);
   const target = `${base}/api/${path.join('/')}${url.search}`;
 
   try {
