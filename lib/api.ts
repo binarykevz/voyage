@@ -82,25 +82,38 @@ async function fetchMedia(query = '', useDirectKey = false): Promise<{ items: Me
   return { items: arr.map(normalize), error: undefined, source: res.source };
 }
 
-export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
-  const encoded = encodeURIComponent(country);
-  const { items } = await fetchMedia(`?country=${encoded}`);
-  return items ?? [];
+/* ---------- Cached full media list + STRICT country matching ---------- */
+let allMediaCache: MediaItem[] | null = null;
+
+export async function getAllMedia(): Promise<MediaItem[]> {
+  if (allMediaCache) return allMediaCache;
+  const { items } = await fetchMedia();
+  allMediaCache = items ?? [];
+  return allMediaCache;
 }
 
-/* Fetches all countries that have at least one media item */
+/* Loose-but-safe match: "United States" vs "United States of America", case-insensitive */
+function countryMatch(itemCountry: string, target: string): boolean {
+  const a = (itemCountry || '').trim().toLowerCase();
+  const b = (target || '').trim().toLowerCase();
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
+export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
+  const all = await getAllMedia();
+  return all.filter((i) => countryMatch(i.country || '', country));
+}
+
 export async function fetchCountriesWithMedia(): Promise<Set<string>> {
-  const { items, error } = await fetchMedia();
-  if (!items || error) return new Set();
-  
-  // Extract unique countries from the media items
-  const countries = new Set<string>();
-  items.forEach((item) => {
-    if (item.country && item.country.trim()) {
-      countries.add(item.country.trim());
-    }
-  });
-  return countries;
+  const all = await getAllMedia();
+  return new Set(all.map((i) => (i.country || '').trim()).filter(Boolean));
+}
+
+/* ONLY this country's own media — NO global fallback anymore */
+export async function getCountryArchiveImage(country: string): Promise<MediaItem | null> {
+  const list = await fetchCountryMedia(country);
+  return list.find((i) => i.mediaType === 'image' && i.url) || list.find((i) => i.url) || null;
 }
 
 export async function getStatsResilient(): Promise<Stats> {
@@ -123,15 +136,6 @@ export async function getRandomMemories(): Promise<{ items: MediaItem[]; source:
   return { items: [], source: 'none' };
 }
 
-export async function getCountryArchiveImage(country: string): Promise<MediaItem | null> {
-  const list = await fetchCountryMedia(country);
-  const pick = list.find((i) => i.mediaType === 'image' && i.url) || list.find((i) => i.url);
-  if (pick) return pick;
-  
-  const { items } = await fetchMedia();
-  if (items && items.length) return shuffle(items)[0];
-  return null;
-}
 
 export function prewarmArchive() {}
 
