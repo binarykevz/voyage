@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getRandomMemories, type MediaItem } from '../lib/api';
 
-const FALLBACK_IMG = 'https://picsum.photos/seed/relic/640/480';
-
 export default function JournalGrid() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [source, setSource] = useState('');
@@ -20,14 +18,11 @@ export default function JournalGrid() {
     <section className="tm-container" style={{ padding: '3rem 1rem' }}>
       <h2 className="tm-h2">Log Entries</h2>
       <div className="tm-divider" />
-      <p className="tm-h2-sub">
-        Recovered pages from the captain&apos;s weathered journal.
-        {source === 'demo' && <em> (Showing demo relics — archive unreachable.)</em>}
-      </p>
+      <p className="tm-h2-sub">Recovered pages from the captain&apos;s weathered journal.</p>
 
       <div className="tm-grid tm-grid-3" style={{ marginTop: '2rem' }}>
         {loading && <div className="tm-card"><div className="tm-card-body">Unrolling the scrolls…</div></div>}
-        {!loading && items.length === 0 && <div className="tm-card"><div className="tm-card-body">The hold is empty.</div></div>}
+        {!loading && items.length === 0 && <div className="tm-card"><div className="tm-card-body">The hold is empty. No relics found in the archives.</div></div>}
         {!loading &&
           items.map((item, i) => (
             <motion.article
@@ -42,12 +37,7 @@ export default function JournalGrid() {
               <div className="tm-badge">{item.mediaType === 'image' ? 'Photograph' : 'Moving Picture'}</div>
               <div className="tm-media">
                 {item.mediaType === 'image' ? (
-                  <img
-                    src={item.url}
-                    alt={item.title || 'Relic'}
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
-                  />
+                  <img src={item.url} alt={item.title || 'Relic'} loading="lazy" />
                 ) : (
                   <video src={item.url} controls playsInline preload="metadata" />
                 )}
