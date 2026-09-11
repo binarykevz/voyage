@@ -16,6 +16,8 @@ export async function GET(
   const jsonHeaders = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
     'Cache-Control': 'no-store',
   };
 
@@ -23,7 +25,8 @@ export async function GET(
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'MISSING_ENV_VARS: Set ARCHIVE_API_BASE and ARCHIVE_API_KEY in your Cloudflare/Vercel dashboard, then trigger a new deployment.',
+        error: 'MISSING_ENV_VARS',
+        message: 'Set ARCHIVE_API_BASE and ARCHIVE_API_KEY in Cloudflare Pages settings, then redeploy.',
       }),
       { status: 500, headers: jsonHeaders }
     );
@@ -40,16 +43,21 @@ export async function GET(
       },
       cache: 'no-store',
     });
+    
     const body = await res.text();
     
-    // Pass through the exact status and body (including "Unauthorized" if key is wrong)
     return new Response(body, { 
       status: res.status, 
       headers: jsonHeaders 
     });
   } catch (e: any) {
     return new Response(
-      JSON.stringify({ success: false, error: String(e?.message || e) }),
+      JSON.stringify({ 
+        success: false, 
+        error: 'FETCH_FAILED',
+        message: String(e?.message || e),
+        target 
+      }),
       { status: 502, headers: jsonHeaders }
     );
   }
