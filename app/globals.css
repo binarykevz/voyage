@@ -669,3 +669,39 @@ body { font-family: 'Almendra', 'IM Fell English', Georgia, serif; }
   transition: transform .35s cubic-bezier(.34,1.56,.64,1);
 }
 .tm-card:hover .tm-mini-seal { transform: scale(1) rotate(-8deg); }
+/* ============ POPUP META (title / description / date) ============ */
+.tm-popup-itemtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: #3b2a14;
+  margin: 0.55rem 0 0.25rem;
+  letter-spacing: 0.03em;
+}
+.tm-popup-date {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.7rem;
+  color: #6b4a22;
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.85;
+}
+.tm-popup-desc {
+  margin-top: 0.3rem;
+  font-family: 'Fondamento', serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #5a3d1c;
+}
+
+/* Entrance animation (restarts each time content is swapped) */
+.tm-popup { animation: popupIn 0.45s ease both; }
+@keyframes popupIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Disable the old 5s fade so popups stay visible for the full 10s */
+.tm-popup-wrap .leaflet-popup-content-wrapper { animation: none !important; }
