@@ -23,26 +23,30 @@ export async function GET(
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Server misconfiguration: set ARCHIVE_API_BASE and ARCHIVE_API_KEY in your hosting dashboard.',
+        error: 'MISSING_ENV_VARS: Set ARCHIVE_API_BASE and ARCHIVE_API_KEY in your Cloudflare/Vercel dashboard, then trigger a new deployment.',
       }),
       { status: 500, headers: jsonHeaders }
     );
   }
 
   const url = new URL(req.url);
-  // Builds: https://media-api.../api/media?country=France (for example)
   const target = `${base}/api/${path.join('/')}${url.search}`;
 
   try {
     const res = await fetch(target, {
       headers: {
         Accept: 'application/json',
-        'x-api-key': key, // 🔑 injected securely server-side
+        'x-api-key': key,
       },
       cache: 'no-store',
     });
     const body = await res.text();
-    return new Response(body, { status: res.status, headers: jsonHeaders });
+    
+    // Pass through the exact status and body (including "Unauthorized" if key is wrong)
+    return new Response(body, { 
+      status: res.status, 
+      headers: jsonHeaders 
+    });
   } catch (e: any) {
     return new Response(
       JSON.stringify({ success: false, error: String(e?.message || e) }),
