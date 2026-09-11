@@ -1,7 +1,6 @@
 export const runtime = 'edge';
 
-/* Secrets come ONLY from environment variables (server-side). */
-function archiveConfig() {
+function getArchiveConfig() {
   const base = (process.env.ARCHIVE_API_BASE || '').replace(/\/+$/, '');
   const key = process.env.ARCHIVE_API_KEY || '';
   return { base, key };
@@ -11,8 +10,8 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const { path } = await params; // Next 15: params is a Promise
-  const { base, key } = archiveConfig();
+  const { path } = await params;
+  const { base, key } = getArchiveConfig();
 
   const jsonHeaders = {
     'Content-Type': 'application/json',
@@ -24,20 +23,21 @@ export async function GET(
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Server misconfiguration: set ARCHIVE_API_BASE and ARCHIVE_API_KEY environment variables in your hosting dashboard.',
+        error: 'Server misconfiguration: set ARCHIVE_API_BASE and ARCHIVE_API_KEY in your hosting dashboard.',
       }),
       { status: 500, headers: jsonHeaders }
     );
   }
 
   const url = new URL(req.url);
+  // Builds: https://media-api.../api/media?country=France (for example)
   const target = `${base}/api/${path.join('/')}${url.search}`;
 
   try {
     const res = await fetch(target, {
       headers: {
         Accept: 'application/json',
-        'x-api-key': key, // 🔑 injected server-side only
+        'x-api-key': key, // 🔑 injected securely server-side
       },
       cache: 'no-store',
     });
