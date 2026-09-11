@@ -1,4 +1,4 @@
-const PROXY = '/api/archive'; // same-origin; the proxy injects the x-api-key
+const PROXY = '/api/archive'; // Same-origin proxy route
 
 export interface MediaItem {
   id?: string;
@@ -45,22 +45,26 @@ const DEMO: MediaItem[] = [
   { url: 'https://picsum.photos/seed/relic3/640/480', title: 'Demo Relic III', description: 'Placeholder while the archives sleep.', mediaType: 'image', createdAt: new Date().toISOString() },
 ];
 
-/* ---------- core fetchers (new /api/media endpoint) ---------- */
+/* Core fetcher handling the dynamic ?country= query */
 async function fetchMedia(query = ''): Promise<MediaItem[] | null> {
   const j = await getJson(`${PROXY}/media${query}`);
+  
+  // The API returns { data: [...] } based on your snippet
   if (j && Array.isArray(j.data)) return j.data.map(normalize);
   if (Array.isArray(j)) return j.map(normalize);
   return null;
 }
 
+/* Fetches media specifically for a clicked country */
 export async function fetchCountryMedia(country: string): Promise<MediaItem[]> {
-  const list = await fetchMedia(`?country=${encodeURIComponent(country)}`);
+  const encoded = encodeURIComponent(country);
+  const list = await fetchMedia(`?country=${encoded}`);
   return list ?? [];
 }
 
-/* ---------- stats ---------- */
+/* Stats for the manifest */
 export async function getStatsResilient(): Promise<Stats> {
-  const all = await fetchMedia();
+  const all = await fetchMedia(); // Fetches everything without country filter
   if (all) {
     const photos = all.filter((i) => i.mediaType === 'image').length;
     const videos = all.filter((i) => i.mediaType === 'video').length;
@@ -69,47 +73,27 @@ export async function getStatsResilient(): Promise<Stats> {
   return { photos: null, videos: null, total: null, apiOnline: false, source: 'demo' };
 }
 
-/* ---------- lists ---------- */
-export async function fetchImages(limit = 6): Promise<{ items: MediaItem[]; source: string }> {
+/* General random memories for the journal grid */
+export async function getRandomMemories(): Promise<{ items: MediaItem[]; source: string }> {
   const all = await fetchMedia();
   if (all && all.length) {
-    const imgs = shuffle(all.filter((i) => i.mediaType === 'image' && i.url)).slice(0, limit);
-    if (imgs.length) return { items: imgs, source: 'proxy' };
+    const imgs = shuffle(all.filter((i) => i.mediaType === 'image' && i.url)).slice(0, 6);
+    const vids = shuffle(all.filter((i) => i.mediaType === 'video' && i.url)).slice(0, 3);
+    return { items: shuffle([...imgs, ...vids]), source: 'proxy' };
   }
   return { items: DEMO, source: 'demo' };
 }
 
-export async function fetchVideos(limit = 3): Promise<{ items: MediaItem[]; source: string }> {
-  const all = await fetchMedia();
-  if (all && all.length) {
-    const vids = shuffle(all.filter((i) => i.mediaType === 'video' && i.url)).slice(0, limit);
-    return { items: vids, source: 'proxy' };
-  }
-  return { items: [], source: 'none' };
-}
-
-export async function getRandomMemories(): Promise<{ items: MediaItem[]; source: string }> {
-  const [img, vid] = await Promise.all([fetchImages(6), fetchVideos(3)]);
-  return { items: shuffle([...img.items, ...vid.items]), source: img.source };
-}
-
-/* ---------- cached single image (map popups) ---------- */
-let cache: MediaItem[] = [];
-export function prewarmArchive() { refill(); }
-async function refill() {
-  const { items } = await fetchImages(4);
-  cache.push(...items.filter((i) => i.url && i.url.startsWith('http')));
-}
-export async function getArchiveImage(): Promise<MediaItem | null> {
-  if (!cache.length) await refill();
-  if (!cache.length) await refill();
-  return cache.shift() || null;
-}
-
-/* Country-first image for popups, falling back to the general pool */
+/* Country-specific image for map popups */
 export async function getCountryArchiveImage(country: string): Promise<MediaItem | null> {
   const list = await fetchCountryMedia(country);
   const pick = list.find((i) => i.mediaType === 'image' && i.url) || list.find((i) => i.url);
   if (pick) return pick;
-  return getArchiveImage();
+  
+  // Fallback: if that specific country has no media, grab a random one from the general pool
+  const all = await fetchMedia();
+  if (all && all.length) return shuffle(all)[0];
+  return null;
 }
+
+export function prewarmArchive() { /* Kept for mapUtils compatibility */ }
